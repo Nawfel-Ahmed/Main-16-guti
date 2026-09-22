@@ -1,0 +1,6 @@
+{
+  "name": "16 Ghuti",
+  "description": "Classic Bengali two-player strategy board game with pass-and-play and deep AI hint engine.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
