@@ -1,18 +1,2615 @@
 <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>16 Ghuti - Bengali Strategy Board Game</title>
-    <meta name="description" content="Classic Bengali two-player strategy board game with pass-and-play and deep AI hint engine." />
-    <meta property="og:title" content="16 Ghuti - Bengali Strategy Board Game" />
-    <meta property="og:description" content="Classic Bengali two-player strategy board game with pass-and-play and deep AI hint engine." />
-    <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary_large_image" />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>16 Ghuti - Bengali Strategy Board Game</title>
+  <meta name="description" content="Classic Bengali two-player strategy board game with pass-and-play and deep AI hint engine." />
+  <meta property="og:title" content="16 Ghuti - Bengali Strategy Board Game" />
+  <meta property="og:description" content="Classic Bengali two-player strategy board game with pass-and-play and deep AI hint engine." />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
 
+  <style>
+    /* Reset & Base Fonts */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: #261105;
+      color: #fff4db;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+    }
+
+    /* Wood Texture Background */
+    .wood-bg {
+      background-color: #c28b50;
+      background-image:
+        radial-gradient(ellipse at 50% 45%, rgba(254, 226, 178, 0.35) 0%, rgba(107, 58, 21, 0.5) 100%),
+        repeating-linear-gradient(90deg, rgba(92, 47, 14, 0.07) 0px, rgba(92, 47, 14, 0.07) 1px, transparent 1px, transparent 18px),
+        repeating-linear-gradient(0deg, rgba(74, 35, 9, 0.05) 0px, rgba(74, 35, 9, 0.05) 2px, transparent 2px, transparent 12px),
+        linear-gradient(180deg, rgba(77, 36, 10, 0.2) 0%, rgba(255, 237, 204, 0.15) 30%, rgba(77, 36, 10, 0.15) 70%, rgba(56, 25, 6, 0.3) 100%);
+    }
+
+    /* Wooden Button Styling */
+    .wood-btn {
+      background: linear-gradient(180deg, #c98846 0%, #a46227 60%, #7c4115 100%);
+      box-shadow: 0 4px 10px rgba(45, 19, 4, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.4), inset 0 -2px 3px rgba(0, 0, 0, 0.4);
+      border: 2px solid #5a2e0e;
+      color: #fff0d4;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.1s ease, filter 0.15s ease;
+    }
+    .wood-btn:hover {
+      filter: brightness(1.08);
+      color: #ffffff;
+    }
+    .wood-btn:active {
+      transform: scale(0.95);
+      box-shadow: 0 2px 5px rgba(45, 19, 4, 0.45), inset 0 2px 3px rgba(0, 0, 0, 0.5);
+    }
+
+    /* App Container */
+    #app {
+      width: 100%;
+      max-width: 440px;
+      min-height: 100vh;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* Screens */
+    .screen {
+      display: none;
+      width: 100%;
+      min-height: 100vh;
+      flex-direction: column;
+      padding: 12px;
+    }
+    .screen.active {
+      display: flex;
+    }
+
+    /* Home Screen */
+    #home-screen {
+      align-items: center;
+      justify-content: space-between;
+      padding: 48px 24px;
+      text-align: center;
+    }
+
+    /* Header Bar in Game */
+    .header-bar, .footer-bar {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      z-index: 20;
+    }
+
+    .circle-icon-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* Player Cards */
+    .player-card {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 14px;
+      border-radius: 18px;
+      background: rgba(244, 228, 193, 0.92);
+      border: 1px solid #b88c56;
+      color: #4a2e12;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.15), inset 0 1px 1px rgba(255,255,255,0.5);
+      transition: all 0.25s ease;
+    }
+    .player-card.active-turn.you-card {
+      background: rgba(255, 252, 240, 0.98);
+      border: 2px solid #2563eb;
+      box-shadow: 0 6px 18px rgba(37,99,235,0.3), inset 0 1px 1px rgba(255,255,255,0.8);
+    }
+    .player-card.active-turn.opp-card {
+      background: rgba(255, 252, 240, 0.98);
+      border: 2px solid #dc2626;
+      box-shadow: 0 6px 18px rgba(220,38,38,0.3), inset 0 1px 1px rgba(255,255,255,0.8);
+    }
+
+    .player-name {
+      font-weight: 800;
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .turn-badge {
+      display: none;
+      font-size: 9px;
+      font-weight: 900;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border-radius: 9999px;
+      background: #fde68a;
+      color: #78350f;
+    }
+    .active-turn .turn-badge {
+      display: inline-block;
+    }
+
+    .avatar-wrapper {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #b88c56;
+      background: #fef3c7;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+      transition: transform 0.2s ease;
+    }
+    .active-turn .avatar-wrapper {
+      transform: scale(1.1);
+    }
+    .you-card.active-turn .avatar-wrapper {
+      border-color: #2563eb;
+    }
+    .opp-card.active-turn .avatar-wrapper {
+      border-color: #dc2626;
+    }
+
+    .score-box {
+      font-size: 13px;
+      font-weight: 800;
+      color: #4a2e12;
+      display: flex;
+      align-items: baseline;
+      gap: 3px;
+    }
+    .score-val {
+      font-size: 18px;
+      font-weight: 900;
+      color: #2b1404;
+    }
+
+    /* Main Board View */
+    .board-stage {
+      flex: 1;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      margin: 4px 0;
+    }
+
+    /* SVG Canvas */
+    #board-svg {
+      width: 100%;
+      max-width: 420px;
+      height: auto;
+      display: block;
+    }
+
+    /* Hint Button */
+    #hint-btn {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #d97706 0%, #92400e 65%, #451a03 100%);
+      border: 2px solid #b45309;
+      box-shadow: 0 6px 14px rgba(45, 19, 4, 0.5), inset 0 1.5px 2px rgba(255, 255, 255, 0.4), inset 0 -2px 3px rgba(0, 0, 0, 0.6);
+      position: relative;
+      flex-direction: column;
+    }
+    #hint-btn:active {
+      transform: scale(0.95);
+    }
+    .hint-subtext {
+      position: absolute;
+      bottom: -7px;
+      background: #1c1917;
+      color: #fef3c7;
+      font-size: 8px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      padding: 1px 5px;
+      border-radius: 5px;
+      border: 1px solid #78350f;
+    }
+
+    /* Hint Info Banner */
+    #hint-banner {
+      display: none;
+      width: 100%;
+      max-width: 400px;
+      background: rgba(44, 21, 6, 0.95);
+      border: 1px solid #d97706;
+      border-radius: 14px;
+      padding: 8px 12px;
+      color: #fef3c7;
+      font-size: 11px;
+      margin-top: 4px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+    }
+    #hint-banner.show {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    /* Thinking Overlay */
+    #thinking-overlay {
+      display: none;
+      position: absolute;
+      top: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 92%;
+      max-width: 380px;
+      background: rgba(34, 15, 4, 0.96);
+      border: 2px solid #f59e0b;
+      border-radius: 16px;
+      padding: 10px 14px;
+      color: #fef3c7;
+      z-index: 40;
+      box-shadow: 0 12px 28px rgba(0,0,0,0.6);
+    }
+    #thinking-overlay.show {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .progress-bar-bg {
+      width: 100%;
+      height: 6px;
+      background: #1c1917;
+      border-radius: 9999px;
+      overflow: hidden;
+      border: 1px solid #451a03;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #d97706, #fbbf24, #f59e0b);
+      transition: width 0.15s linear;
+    }
+
+    /* Modals Backdrop */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.72);
+      backdrop-filter: blur(2px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-backdrop.show {
+      display: flex;
+    }
+
+    .modal-box {
+      width: 100%;
+      max-width: 380px;
+      background: #f5e6c8;
+      border: 2px solid #b88c56;
+      border-radius: 24px;
+      padding: 24px 20px;
+      text-align: center;
+      color: #451a03;
+      box-shadow: 0 20px 45px rgba(0,0,0,0.7), inset 0 2px 2px rgba(255,255,255,0.7);
+    }
+
+    /* Slider & Settings Input */
+    .settings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #e9d5b4;
+      border: 1px solid #c4a173;
+      padding: 12px 14px;
+      border-radius: 14px;
+      margin-bottom: 12px;
+      text-align: left;
+    }
+
+    .timer-pill-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .timer-pill {
+      flex: 1 1 30%;
+      padding: 6px 4px;
+      border-radius: 8px;
+      background: #dfc59e;
+      border: 1.5px solid #a87e4d;
+      font-size: 11px;
+      font-weight: 800;
+      color: #3b1904;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+    .timer-pill:hover {
+      background: #f3dfbf;
+    }
+    .timer-pill.active {
+      background: #b45309;
+      color: #fff;
+      border-color: #78350f;
+      box-shadow: 0 2px 6px rgba(180,83,9,0.4);
+    }
+
+    /* Range Slider */
+    .custom-range {
+      width: 100%;
+      height: 8px;
+      accent-color: #b45309;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    /* Toggle Switch */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 48px;
+      height: 26px;
+      flex-shrink: 0;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #a87e4d;
+      transition: .3s;
+      border-radius: 26px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: #16a34a;
+    }
+    input:checked + .slider:before {
+      transform: translateX(22px);
+    }
+
+    /* Mandatory Notice Toast */
+    #mandatory-toast {
+      display: none;
+      position: absolute;
+      top: -6px;
+      z-index: 30;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      background: rgba(69, 26, 3, 0.95);
+      border: 2px solid #f59e0b;
+      color: #fef3c7;
+      font-size: 11px;
+      font-weight: 800;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.5);
+    }
+    #mandatory-toast.show {
+      display: block;
+    }
+  </style>
+</head>
+<body class="wood-bg">
+  <div id="app">
+
+    <!-- SCREEN 1: HOME SCREEN -->
+    <div id="home-screen" class="screen active">
+      <div style="width: 100%; display: flex; justify-content: flex-end;">
+        <button id="home-settings-btn" class="wood-btn circle-icon-btn" title="Settings">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      </div>
+
+      <div style="display: flex; flex-direction: column; align-items: center; margin-top: 10px;">
+        <div style="width: 100px; height: 100px; margin-bottom: 16px; border-radius: 28px; background: #3f210b; padding: 12px; border: 2px solid #b88c56; box-shadow: 0 16px 32px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; transform: rotate(-3deg);">
+          <svg viewBox="0 0 64 64" style="width: 100%; height: 100%;" fill="none">
+            <rect x="8" y="8" width="48" height="48" rx="4" stroke="#8d562c" stroke-width="2.5" />
+            <line x1="8" y1="32" x2="56" y2="32" stroke="#8d562c" stroke-width="2" />
+            <line x1="32" y1="8" x2="32" y2="56" stroke="#8d562c" stroke-width="2" />
+            <line x1="8" y1="8" x2="56" y2="56" stroke="#8d562c" stroke-width="2" />
+            <line x1="8" y1="56" x2="56" y2="8" stroke="#8d562c" stroke-width="2" />
+            <circle cx="20" cy="20" r="7" fill="#dc2626" stroke="#991b1b" stroke-width="1.5" />
+            <circle cx="44" cy="44" r="7" fill="#2563eb" stroke="#1e40af" stroke-width="1.5" />
+          </svg>
+        </div>
+
+        <h1 style="font-size: 46px; font-weight: 900; color: #fde68a; text-shadow: 0 4px 12px rgba(40,15,5,0.8), 0 2px 2px #3b1802; letter-spacing: -1px;">
+          16 Ghuti
+        </h1>
+        <p style="font-size: 13px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #d6a56b; margin-top: 4px;">
+          ষোল গুটি • Classic Bengali Strategy
+        </p>
+      </div>
+
+      <div style="width: 100%; max-width: 290px; margin: auto 0;">
+        <button id="start-game-btn" class="wood-btn" style="width: 100%; padding: 18px 0; border-radius: 20px; font-size: 22px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; background: linear-gradient(180deg, #d97706 0%, #b45309 60%, #78350f 100%); border: 2px solid #fde68a; box-shadow: 0 10px 25px rgba(0,0,0,0.6), inset 0 2px 3px rgba(255,255,255,0.4), inset 0 -3px 4px rgba(0,0,0,0.5);">
+          START MATCH
+        </button>
+      </div>
+
+      <div style="font-size: 12px; font-weight: 600; color: rgba(196,152,102,0.85); margin-bottom: 8px;">
+        Pass & Play • Deep Minimax AI Hint Engine
+      </div>
+    </div>
+
+    <!-- SCREEN 2: GAMEPLAY SCREEN -->
+    <div id="game-screen" class="screen">
+      <!-- Top Header -->
+      <header class="header-bar">
+        <button id="back-home-btn" class="wood-btn circle-icon-btn" title="Leave Match">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+        </button>
+
+        <div id="opp-card" class="player-card opp-card">
+          <div class="player-name">
+            <span style="color: #991b1b;">Opponent</span>
+            <span class="turn-badge">Turn</span>
+          </div>
+          <div class="avatar-wrapper">
+            <!-- Opponent avatar -->
+            <svg viewBox="0 0 36 36" style="width: 32px; height: 32px;" fill="none">
+              <rect width="36" height="36" rx="18" fill="#FECDD3" />
+              <path d="M9 16C9 9 13 7 18 7C23 7 27 9 27 16C26 18 24 16 22 16C20 16 19 15 18 15C17 15 16 16 14 16C12 16 10 18 9 16Z" fill="#451A03" />
+              <circle cx="18" cy="19" r="7" fill="#FDE047" />
+              <circle cx="15.5" cy="17.5" r="1" fill="#1C1917" />
+              <circle cx="20.5" cy="17.5" r="1" fill="#1C1917" />
+              <circle cx="18" cy="22" r="1" fill="#991B1B" />
+              <path d="M11 32C11 26 14 25 18 25C22 25 25 26 25 32H11Z" fill="#DC2626" />
+            </svg>
+          </div>
+          <div class="score-box">
+            <span>Score:</span>
+            <span id="opp-score" class="score-val">0</span>
+          </div>
+        </div>
+
+        <button id="game-settings-btn" class="wood-btn circle-icon-btn" title="Settings">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      </header>
+
+      <!-- Main Stage -->
+      <main class="board-stage">
+        <!-- Mandatory Notice Toast -->
+        <div id="mandatory-toast"></div>
+
+        <!-- AI Thinking Overlay -->
+        <div id="thinking-overlay">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #f59e0b;"></span>
+              <strong style="font-size: 12px; color: #fde68a;">গ্র্যান্ডমাস্টার এআই বিশ্লেষণ চলছে...</strong>
+            </div>
+            <button id="cancel-thinking-btn" style="padding: 2px 8px; border-radius: 6px; background: rgba(180,83,9,0.7); border: 1px solid #d97706; color: #fef3c7; font-size: 10px; font-weight: 700; cursor: pointer;">
+              থামান
+            </button>
+          </div>
+          <div style="display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-family: monospace; color: #fcd34d; border-top: 1px solid rgba(217,119,6,0.3); pt: 4px;">
+            <span>ডেপথ: <strong id="thinking-depth-val" style="color: #fff;">1</strong> / ২০ প্লাই</span>
+            <span>সময়: <strong id="thinking-time-val" style="color: #fff;">0.0</strong> সে / <span id="thinking-target-val">10</span> সে</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div id="thinking-progress-fill" class="progress-bar-fill"></div>
+          </div>
+        </div>
+
+        <!-- SVG Board -->
+        <svg id="board-svg" viewBox="0 0 360 584">
+          <defs>
+            <radialGradient id="redPawnGrad" cx="35%" cy="30%" r="65%">
+              <stop offset="0%" stopColor="#f87171" />
+              <stop offset="35%" stopColor="#dc2626" />
+              <stop offset="85%" stopColor="#991b1b" />
+              <stop offset="100%" stopColor="#5f1010" />
+            </radialGradient>
+            <radialGradient id="bluePawnGrad" cx="35%" cy="30%" r="65%">
+              <stop offset="0%" stopColor="#60a5fa" />
+              <stop offset="35%" stopColor="#2563eb" />
+              <stop offset="85%" stopColor="#1e40af" />
+              <stop offset="100%" stopColor="#111827" />
+            </radialGradient>
+            <marker id="hintArrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 9 5 L 0 9 z" fill="#f59e0b" />
+            </marker>
+          </defs>
+
+          <!-- SVG Group Layers -->
+          <g id="svg-edges" pointer-events="none"></g>
+          <g id="svg-pits" pointer-events="none"></g>
+          <g id="svg-hint-layer" pointer-events="none"></g>
+          <g id="svg-destinations"></g>
+          <g id="svg-pawns"></g>
+        </svg>
+
+        <!-- Hint Result Banner -->
+        <div id="hint-banner">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+              <span id="hint-rank-pill" style="padding: 1px 6px; border-radius: 9999px; background: rgba(245,158,11,0.25); border: 1px solid rgba(251,191,36,0.5); font-size: 10px; font-weight: 900; color: #fcd34d;">Move #1</span>
+              <span id="hint-safe-pill" style="padding: 1px 6px; border-radius: 6px; background: rgba(6,95,70,0.8); border: 1px solid rgba(16,185,129,0.5); font-size: 9px; font-weight: 800; color: #6ee7b7;">✓ Safe</span>
+              <span id="hint-desc-text" style="font-size: 11px; font-weight: 600; color: #fde68a;">নিরাপদ চাল</span>
+            </div>
+            <button id="dismiss-hint-btn" style="background: none; border: none; font-size: 10px; font-weight: 700; color: #f59e0b; cursor: pointer; text-decoration: underline;">
+              Dismiss
+            </button>
+          </div>
+          <div id="hint-alt-note" style="display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: rgba(253,230,138,0.8); border-top: 1px solid rgba(120,53,15,0.5); padding-top: 3px;">
+            <span>🔄 বিকল্প চাল দেখতে আবার <strong>HINT</strong> বাটনে ক্লিক করুন</span>
+            <span id="hint-depth-tag" style="font-family: monospace; font-size: 9px; opacity: 0.8;">Depth 14</span>
+          </div>
+        </div>
+      </main>
+
+      <!-- Bottom Footer -->
+      <footer class="footer-bar">
+        <button id="hint-btn" class="wood-btn" title="Get AI Minimax Hint">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fef3c7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"></path>
+            <path d="M9 18h6"></path>
+            <path d="M10 22h4"></path>
+          </svg>
+          <span id="hint-btn-label" class="hint-subtext">HINT</span>
+        </button>
+
+        <div id="you-card" class="player-card you-card">
+          <div class="player-name">
+            <span style="color: #1e40af;">You</span>
+            <span class="turn-badge">Turn</span>
+          </div>
+          <div class="avatar-wrapper">
+            <!-- Smiling boy avatar -->
+            <svg viewBox="0 0 36 36" style="width: 32px; height: 32px;" fill="none">
+              <rect width="36" height="36" rx="18" fill="#FDE68A" />
+              <path d="M10 16C10 10 13 8 18 8C23 8 26 10 26 16C26 18 25 17 24 16C23 15 21 16 18 16C15 16 13 15 12 16C11 17 10 18 10 16Z" fill="#78350F" />
+              <circle cx="18" cy="19" r="7" fill="#FBBF24" />
+              <circle cx="16" cy="18" r="1" fill="#451A03" />
+              <circle cx="20" cy="18" r="1" fill="#451A03" />
+              <path d="M16 21C16.5 22.2 19.5 22.2 20 21" stroke="#451A03" stroke-width="1" stroke-linecap="round" />
+              <path d="M11 32C11 26 14 25 18 25C22 25 25 26 25 32H11Z" fill="#3B82F6" />
+            </svg>
+          </div>
+          <div class="score-box">
+            <span>Score:</span>
+            <span id="you-score" class="score-val">0</span>
+          </div>
+        </div>
+
+        <button id="reset-game-btn" class="wood-btn circle-icon-btn" title="Reset Board">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+            <path d="M3 3v5h5"></path>
+          </svg>
+        </button>
+      </footer>
+    </div>
+
+    <!-- MODAL 1: SETTINGS MODAL -->
+    <div id="settings-modal" class="modal-backdrop">
+      <div class="modal-box">
+        <h3 style="font-size: 24px; font-weight: 900; color: #451a03; margin-bottom: 4px;">
+          ⚙️ সেটিংস (Settings)
+        </h3>
+        <p style="font-size: 11px; font-weight: 700; color: #8c5e2d; text-transform: uppercase; margin-bottom: 18px;">
+          Game & Hint Configuration
+        </p>
+
+        <!-- Setting: Sound Toggle -->
+        <div class="settings-row">
+          <div>
+            <div style="font-size: 14px; font-weight: 800; color: #3b1904;">সাউন্ড ইফেক্ট (Sound)</div>
+            <div style="font-size: 11px; color: #78350f;">গুটি চাল ও জয়ের শব্দ</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="sound-toggle-input" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <!-- Setting: Hint Search Timer (5s - 20s) -->
+        <div class="settings-row" style="flex-direction: column; align-items: stretch;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 14px; font-weight: 800; color: #3b1904;">হিন্ট সার্চ টাইমার</div>
+            <div style="font-size: 13px; font-weight: 900; color: #92400e;">
+              <span id="timer-display-val">10</span> সেকেন্ড
+            </div>
+          </div>
+          <div style="font-size: 11px; color: #78350f; margin-top: 2px;">
+            হিন্ট বাটন ক্লিক করলে এআই কত সেকেন্ড ধরে ডিপ মিনিম্যাক্স সার্চ করবে:
+          </div>
+
+          <!-- Slider -->
+          <input type="range" id="hint-timer-slider" class="custom-range" min="5" max="20" step="1" value="10">
+
+          <!-- Preset Pills -->
+          <div class="timer-pill-group">
+            <button class="timer-pill" data-sec="5">৫ সে</button>
+            <button class="timer-pill" data-sec="8">৮ সে</button>
+            <button class="timer-pill active" data-sec="10">১০ সে (Def)</button>
+            <button class="timer-pill" data-sec="12">১২ সে</button>
+            <button class="timer-pill" data-sec="15">১৫ সে</button>
+            <button class="timer-pill" data-sec="20">২০ সে</button>
+          </div>
+        </div>
+
+        <button id="close-settings-btn" class="wood-btn" style="width: 100%; padding: 12px 0; border-radius: 14px; font-weight: 800; font-size: 14px; margin-top: 6px;">
+          সংরক্ষণ ও বন্ধ করুন (Save)
+        </button>
+      </div>
+    </div>
+
+    <!-- MODAL 2: FIRST MOVE SELECTION MODAL -->
+    <div id="first-move-modal" class="modal-backdrop">
+      <div class="modal-box">
+        <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 10px;">
+          <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #ef4444, #991b1b); border: 2px solid #450a0a; display: flex; align-items: center; justify-content: center;">
+            <span style="width: 14px; height: 14px; border-radius: 50%; background: #fca5a5;"></span>
+          </div>
+          <span style="font-size: 14px; font-weight: 900; color: #8c5e2d;">VS</span>
+          <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #1e40af); border: 2px solid #172554; display: flex; align-items: center; justify-content: center;">
+            <span style="width: 14px; height: 14px; border-radius: 50%; background: #93c5fd;"></span>
+          </div>
+        </div>
+
+        <h3 style="font-size: 22px; font-weight: 900; color: #451a03; margin-bottom: 2px;">
+          কে প্রথম চাল দেবে?
+        </h3>
+        <p style="font-size: 11px; font-weight: 800; color: #8c5e2d; text-transform: uppercase; margin-bottom: 16px;">
+          Who will play the first move?
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px;">
+          <!-- Blue Button -->
+          <button id="select-blue-btn" class="wood-btn" style="padding: 12px 14px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #1d4ed8, #1e40af); border: 2px solid #60a5fa;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 36px; height: 36px; border-radius: 50%; background: #172554; border: 2px solid #93c5fd; display: flex; align-items: center; justify-content: center;">
+                <span style="width: 18px; height: 18px; border-radius: 50%; background: #60a5fa;"></span>
+              </div>
+              <div style="text-align: left;">
+                <div style="font-size: 15px; font-weight: 900; color: #ffffff;">নীল (Blue)</div>
+                <div style="font-size: 11px; color: #bfdbfe;">নিচের গুটি • You moves first</div>
+              </div>
+            </div>
+            <span style="padding: 3px 10px; border-radius: 9999px; background: rgba(96,165,250,0.3); border: 1px solid #93c5fd; font-size: 11px; font-weight: 900;">
+              START
+            </span>
+          </button>
+
+          <!-- Red Button -->
+          <button id="select-red-btn" class="wood-btn" style="padding: 12px 14px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #b91c1c, #991b1b); border: 2px solid #f87171;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 36px; height: 36px; border-radius: 50%; background: #450a0a; border: 2px solid #fca5a5; display: flex; align-items: center; justify-content: center;">
+                <span style="width: 18px; height: 18px; border-radius: 50%; background: #f87171;"></span>
+              </div>
+              <div style="text-align: left;">
+                <div style="font-size: 15px; font-weight: 900; color: #ffffff;">লাল (Red)</div>
+                <div style="font-size: 11px; color: #fecaca;">উপরের গুটি • Red moves first</div>
+              </div>
+            </div>
+            <span style="padding: 3px 10px; border-radius: 9999px; background: rgba(248,113,113,0.3); border: 1px solid #fca5a5; font-size: 11px; font-weight: 900;">
+              START
+            </span>
+          </button>
+        </div>
+
+        <button id="cancel-first-move-btn" style="background: none; border: none; font-size: 12px; font-weight: 700; color: #78350f; cursor: pointer;">
+          বাতিল (Cancel)
+        </button>
+      </div>
+    </div>
+
+    <!-- MODAL 3: LEAVE CONFIRMATION MODAL -->
+    <div id="leave-modal" class="modal-backdrop">
+      <div class="modal-box">
+        <h3 style="font-size: 22px; font-weight: 900; color: #451a03; margin-bottom: 6px;">
+          ম্যাচ ত্যাগ করবেন?
+        </h3>
+        <p style="font-size: 13px; font-weight: 600; color: #78350f; margin-bottom: 20px;">
+          বর্তমান ম্যাচের অগ্রগতি মুছে যাবে। আপনি কি হোম পেজে ফিরতে চান?
+        </p>
+        <div style="display: flex; gap: 10px;">
+          <button id="cancel-leave-btn" class="wood-btn" style="flex: 1; padding: 10px 0; border-radius: 12px; font-weight: 800; font-size: 13px;">
+            না (Cancel)
+          </button>
+          <button id="confirm-leave-btn" style="flex: 1; padding: 10px 0; border-radius: 12px; font-weight: 800; font-size: 13px; background: #b91c1c; border: 1px solid #7f1d1d; color: white; cursor: pointer;">
+            হ্যাঁ (Leave)
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL 4: GAME OVER MODAL -->
+    <div id="gameover-modal" class="modal-backdrop">
+      <div class="modal-box">
+        <div style="font-size: 40px; margin-bottom: 4px;">🏆</div>
+        <h2 id="gameover-title" style="font-size: 26px; font-weight: 900; color: #451a03; margin-bottom: 2px;">
+          You Win!
+        </h2>
+        <p id="gameover-reason" style="font-size: 11px; font-weight: 700; color: #78350f; text-transform: uppercase; margin-bottom: 16px;">
+          Captured all pieces!
+        </p>
+
+        <div style="background: #ebd3aa; border: 1px solid #b88c56; border-radius: 16px; padding: 12px; margin-bottom: 18px; display: flex; justify-content: space-around; align-items: center;">
+          <div style="text-align: center;">
+            <div style="font-size: 11px; font-weight: 800; color: #1e40af; text-transform: uppercase;">You</div>
+            <div id="gameover-score-you" style="font-size: 28px; font-weight: 900; color: #1e3a8a;">0</div>
+          </div>
+          <div style="font-size: 20px; font-weight: 900; color: #78350f;">:</div>
+          <div style="text-align: center;">
+            <div style="font-size: 11px; font-weight: 800; color: #991b1b; text-transform: uppercase;">Opponent</div>
+            <div id="gameover-score-opp" style="font-size: 28px; font-weight: 900; color: #7f1d1d;">0</div>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <button id="play-again-btn" class="wood-btn" style="padding: 12px 0; border-radius: 14px; font-weight: 900; font-size: 15px; text-transform: uppercase; background: linear-gradient(180deg, #d97706, #b45309);">
+            Play Again (পুনরায় খেলুন)
+          </button>
+          <button id="gameover-home-btn" class="wood-btn" style="padding: 10px 0; border-radius: 12px; font-weight: 700; font-size: 13px;">
+            Back to Home
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SINGLE INLINE ENGINE & GAME SCRIPT -->
+  <script>
+    (function() {
+      'use strict';
+
+      // ==========================================
+      // 1. PROCEDURAL SOUND SYNTHESIZER
+      // ==========================================
+      class SoundManager {
+        constructor() {
+          this.ctx = null;
+          this.enabled = true;
+        }
+
+        init() {
+          if (!this.ctx && typeof window !== 'undefined') {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) {
+              this.ctx = new AudioCtx();
+            }
+          }
+          if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume();
+          }
+        }
+
+        playSelect() {
+          if (!this.enabled) return;
+          try {
+            this.init();
+            if (!this.ctx) return;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(440, this.ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(180, this.ctx.currentTime + 0.08);
+            gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.08);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start();
+            osc.stop(this.ctx.currentTime + 0.08);
+          } catch(e) {}
+        }
+
+        playMove() {
+          if (!this.enabled) return;
+          try {
+            this.init();
+            if (!this.ctx) return;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(280, this.ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(90, this.ctx.currentTime + 0.12);
+            gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.12);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start();
+            osc.stop(this.ctx.currentTime + 0.12);
+          } catch(e) {}
+        }
+
+        playCapture() {
+          if (!this.enabled) return;
+          try {
+            this.init();
+            if (!this.ctx) return;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(520, this.ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(110, this.ctx.currentTime + 0.2);
+            gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.2);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start();
+            osc.stop(this.ctx.currentTime + 0.2);
+          } catch(e) {}
+        }
+
+        playHint() {
+          if (!this.enabled) return;
+          try {
+            this.init();
+            if (!this.ctx) return;
+            const now = this.ctx.currentTime;
+            [523.25, 659.25, 783.99].forEach((freq, i) => {
+              const osc = this.ctx.createOscillator();
+              const gain = this.ctx.createGain();
+              osc.type = 'sine';
+              osc.frequency.setValueAtTime(freq, now + i * 0.09);
+              gain.gain.setValueAtTime(0.25, now + i * 0.09);
+              gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.09 + 0.25);
+              osc.connect(gain);
+              gain.connect(this.ctx.destination);
+              osc.start(now + i * 0.09);
+              osc.stop(now + i * 0.09 + 0.25);
+            });
+          } catch(e) {}
+        }
+
+        playVictory() {
+          if (!this.enabled) return;
+          try {
+            this.init();
+            if (!this.ctx) return;
+            const now = this.ctx.currentTime;
+            const notes = [392, 523.25, 659.25, 783.99, 1046.5];
+            notes.forEach((freq, idx) => {
+              const osc = this.ctx.createOscillator();
+              const gain = this.ctx.createGain();
+              osc.type = 'triangle';
+              osc.frequency.setValueAtTime(freq, now + idx * 0.12);
+              gain.gain.setValueAtTime(0.3, now + idx * 0.12);
+              gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.12 + 0.4);
+              osc.connect(gain);
+              gain.connect(this.ctx.destination);
+              osc.start(now + idx * 0.12);
+              osc.stop(now + idx * 0.12 + 0.4);
+            });
+          } catch(e) {}
+        }
+      }
+
+      const sound = new SoundManager();
+
+      // ==========================================
+      // 2. BOARD GEOMETRY & TOPOLOGY (37 NODES)
+      // ==========================================
+      const NODES = [
+        // Row 0
+        { id: 0, row: 0, col: 0, x: 32, y: 44 },
+        { id: 1, row: 0, col: 2, x: 180, y: 44 },
+        { id: 2, row: 0, col: 4, x: 328, y: 44 },
+        // Row 1
+        { id: 3, row: 1, col: 1, x: 106, y: 106 },
+        { id: 4, row: 1, col: 2, x: 180, y: 106 },
+        { id: 5, row: 1, col: 3, x: 254, y: 106 },
+        // Row 2
+        { id: 6, row: 2, col: 0, x: 32, y: 168 },
+        { id: 7, row: 2, col: 1, x: 106, y: 168 },
+        { id: 8, row: 2, col: 2, x: 180, y: 168 },
+        { id: 9, row: 2, col: 3, x: 254, y: 168 },
+        { id: 10, row: 2, col: 4, x: 328, y: 168 },
+        // Row 3
+        { id: 11, row: 3, col: 0, x: 32, y: 230 },
+        { id: 12, row: 3, col: 1, x: 106, y: 230 },
+        { id: 13, row: 3, col: 2, x: 180, y: 230 },
+        { id: 14, row: 3, col: 3, x: 254, y: 230 },
+        { id: 15, row: 3, col: 4, x: 328, y: 230 },
+        // Row 4 (Central Line)
+        { id: 16, row: 4, col: 0, x: 32, y: 292 },
+        { id: 17, row: 4, col: 1, x: 106, y: 292 },
+        { id: 18, row: 4, col: 2, x: 180, y: 292 },
+        { id: 19, row: 4, col: 3, x: 254, y: 292 },
+        { id: 20, row: 4, col: 4, x: 328, y: 292 },
+        // Row 5
+        { id: 21, row: 5, col: 0, x: 32, y: 354 },
+        { id: 22, row: 5, col: 1, x: 106, y: 354 },
+        { id: 23, row: 5, col: 2, x: 180, y: 354 },
+        { id: 24, row: 5, col: 3, x: 254, y: 354 },
+        { id: 25, row: 5, col: 4, x: 328, y: 354 },
+        // Row 6
+        { id: 26, row: 6, col: 0, x: 32, y: 416 },
+        { id: 27, row: 6, col: 1, x: 106, y: 416 },
+        { id: 28, row: 6, col: 2, x: 180, y: 416 },
+        { id: 29, row: 6, col: 3, x: 254, y: 416 },
+        { id: 30, row: 6, col: 4, x: 328, y: 416 },
+        // Row 7
+        { id: 31, row: 7, col: 1, x: 106, y: 478 },
+        { id: 32, row: 7, col: 2, x: 180, y: 478 },
+        { id: 33, row: 7, col: 3, x: 254, y: 478 },
+        // Row 8
+        { id: 34, row: 8, col: 0, x: 32, y: 540 },
+        { id: 35, row: 8, col: 2, x: 180, y: 540 },
+        { id: 36, row: 8, col: 4, x: 328, y: 540 },
+      ];
+
+      const EDGES = [
+        // Horizontals
+        { from: 0, to: 1 }, { from: 1, to: 2 },
+        { from: 3, to: 4 }, { from: 4, to: 5 },
+        { from: 6, to: 7 }, { from: 7, to: 8 }, { from: 8, to: 9 }, { from: 9, to: 10 },
+        { from: 11, to: 12 }, { from: 12, to: 13 }, { from: 13, to: 14 }, { from: 14, to: 15 },
+        { from: 16, to: 17 }, { from: 17, to: 18 }, { from: 18, to: 19 }, { from: 19, to: 20 },
+        { from: 21, to: 22 }, { from: 22, to: 23 }, { from: 23, to: 24 }, { from: 24, to: 25 },
+        { from: 26, to: 27 }, { from: 27, to: 28 }, { from: 28, to: 29 }, { from: 29, to: 30 },
+        { from: 31, to: 32 }, { from: 32, to: 33 },
+        { from: 34, to: 35 }, { from: 35, to: 36 },
+
+        // Verticals
+        { from: 6, to: 11 }, { from: 11, to: 16 }, { from: 16, to: 21 }, { from: 21, to: 26 },
+        { from: 7, to: 12 }, { from: 12, to: 17 }, { from: 17, to: 22 }, { from: 22, to: 27 },
+        { from: 1, to: 4 }, { from: 4, to: 8 }, { from: 8, to: 13 }, { from: 13, to: 18 },
+        { from: 18, to: 23 }, { from: 23, to: 28 }, { from: 28, to: 32 }, { from: 32, to: 35 },
+        { from: 9, to: 14 }, { from: 14, to: 19 }, { from: 19, to: 24 }, { from: 24, to: 29 },
+        { from: 10, to: 15 }, { from: 15, to: 20 }, { from: 20, to: 25 }, { from: 25, to: 30 },
+
+        // Diagonals
+        { from: 0, to: 3 }, { from: 3, to: 8 }, { from: 2, to: 5 }, { from: 5, to: 8 },
+        { from: 6, to: 12 }, { from: 12, to: 18 }, { from: 8, to: 12 }, { from: 12, to: 16 },
+        { from: 8, to: 14 }, { from: 14, to: 20 }, { from: 10, to: 14 }, { from: 14, to: 18 },
+        { from: 16, to: 22 }, { from: 22, to: 28 }, { from: 18, to: 22 }, { from: 22, to: 26 },
+        { from: 18, to: 24 }, { from: 24, to: 30 }, { from: 20, to: 24 }, { from: 24, to: 28 },
+        { from: 28, to: 31 }, { from: 31, to: 34 }, { from: 28, to: 33 }, { from: 33, to: 36 },
+      ];
+
+      const ADJACENCY = Array.from({ length: 37 }, () => []);
+      for (const edge of EDGES) {
+        if (!ADJACENCY[edge.from].includes(edge.to)) ADJACENCY[edge.from].push(edge.to);
+        if (!ADJACENCY[edge.to].includes(edge.from)) ADJACENCY[edge.to].push(edge.from);
+      }
+      for (let i = 0; i < 37; i++) {
+        ADJACENCY[i].sort((a, b) => a - b);
+      }
+
+      function buildJumpTriplets() {
+        const triplets = [];
+        const set = new Set();
+        for (let b = 0; b < 37; b++) {
+          const bNode = NODES[b];
+          const neighbors = ADJACENCY[b];
+          for (let i = 0; i < neighbors.length; i++) {
+            const a = neighbors[i];
+            const aNode = NODES[a];
+            const dx1 = bNode.x - aNode.x;
+            const dy1 = bNode.y - aNode.y;
+            for (let j = 0; j < neighbors.length; j++) {
+              if (i === j) continue;
+              const c = neighbors[j];
+              const cNode = NODES[c];
+              const dx2 = cNode.x - bNode.x;
+              const dy2 = cNode.y - bNode.y;
+              if (dx1 === dx2 && dy1 === dy2) {
+                const key = `${a}-${b}-${c}`;
+                if (!set.has(key)) {
+                  set.add(key);
+                  triplets.push({ from: a, over: b, to: c });
+                }
+              }
+            }
+          }
+        }
+        return triplets;
+      }
+
+      const JUMP_TRIPLETS = buildJumpTriplets();
+      const JUMPS_FROM = Array.from({ length: 37 }, () => []);
+      for (const jump of JUMP_TRIPLETS) {
+        JUMPS_FROM[jump.from].push(jump);
+      }
+
+      const GRAND_HUBS = [18, 8, 28, 12, 14, 22, 24];
+      const CENTRAL_COLUMN_NODES = [1, 4, 8, 13, 18, 23, 28, 32, 35];
+      const CENTRAL_ROW_NODES = [16, 17, 18, 19, 20];
+      const CENTRAL_CORRIDORS = [13, 23, 17, 19];
+      const DEAD_END_NODES = [0, 2, 34, 36];
+      const FRINGE_CORNER_NODES = [0, 2, 6, 10, 26, 30, 34, 36];
+      const SIDE_WING_HUBS = [16, 20];
+      const SIDE_WING_FLANK_NODES = [11, 16, 21, 15, 20, 25];
+
+      const POSITION_WEIGHTS = [
+        -500, 500, -500,
+        240, 700, 240,
+        -200, 500, 1800, 500, -200,
+        1100, 1600, 1200, 1600, 1100,
+        2200, 1100, 3000, 1100, 2200,
+        1100, 1600, 1200, 1600, 1100,
+        -200, 500, 1800, 500, -200,
+        240, 700, 240,
+        -500, 500, -500,
+      ];
+
+      function getInitialBoard() {
+        const board = new Array(37).fill(null);
+        for (let i = 0; i < 16; i++) board[i] = 'red';
+        for (let i = 16; i < 21; i++) board[i] = null;
+        for (let i = 21; i < 37; i++) board[i] = 'blue';
+        return board;
+      }
+
+      function getOpponentColor(color) {
+        if (color === 'red') return 'blue';
+        if (color === 'blue') return 'red';
+        return null;
+      }
+
+      // ==========================================
+      // 3. MOVE GENERATION & RULES
+      // ==========================================
+      function getSingleJumpsFrom(board, node, color) {
+        const enemy = getOpponentColor(color);
+        if (!enemy) return [];
+        const possible = JUMPS_FROM[node];
+        const res = [];
+        for (let i = 0; i < possible.length; i++) {
+          const j = possible[i];
+          if (board[j.over] === enemy && board[j.to] === null) {
+            res.push({ over: j.over, to: j.to });
+          }
+        }
+        return res;
+      }
+
+      function getCaptureChainsFromNode(board, startNode, color) {
+        const results = [];
+        const currentBoard = [...board];
+
+        function search(currentNode, path, captured) {
+          const singleJumps = getSingleJumpsFrom(currentBoard, currentNode, color);
+          if (singleJumps.length === 0) {
+            if (captured.length > 0) {
+              results.push({
+                from: startNode,
+                to: currentNode,
+                path: [...path],
+                captured: [...captured],
+                isCapture: true,
+              });
+            }
+            return;
+          }
+          for (let i = 0; i < singleJumps.length; i++) {
+            const jump = singleJumps[i];
+            const enemyPiece = currentBoard[jump.over];
+            currentBoard[currentNode] = null;
+            currentBoard[jump.over] = null;
+            currentBoard[jump.to] = color;
+            path.push(jump.to);
+            captured.push(jump.over);
+
+            search(jump.to, path, captured);
+
+            path.pop();
+            captured.pop();
+            currentBoard[jump.to] = null;
+            currentBoard[jump.over] = enemyPiece;
+            currentBoard[currentNode] = color;
+          }
+        }
+
+        search(startNode, [startNode], []);
+        return results;
+      }
+
+      function getAllCaptureMoves(board, color) {
+        const captureMoves = [];
+        for (let i = 0; i < 37; i++) {
+          if (board[i] === color) {
+            const chains = getCaptureChainsFromNode(board, i, color);
+            for (let c = 0; c < chains.length; c++) {
+              captureMoves.push(chains[c]);
+            }
+          }
+        }
+        return captureMoves;
+      }
+
+      function getAllRegularMoves(board, color) {
+        const regularMoves = [];
+        for (let i = 0; i < 37; i++) {
+          if (board[i] === color) {
+            const neighbors = ADJACENCY[i];
+            for (let j = 0; j < neighbors.length; j++) {
+              const dest = neighbors[j];
+              if (board[dest] === null) {
+                regularMoves.push({
+                  from: i,
+                  to: dest,
+                  path: [i, dest],
+                  captured: [],
+                  isCapture: false,
+                });
+              }
+            }
+          }
+        }
+        return regularMoves;
+      }
+
+      function getLegalMoves(board, color) {
+        const captures = getAllCaptureMoves(board, color);
+        if (captures.length > 0) return captures;
+        return getAllRegularMoves(board, color);
+      }
+
+      function isMoveLoopReversal(move, sideToMove, history) {
+        if (!history || history.length === 0 || move.isCapture) return false;
+        const recent = history.slice(-6);
+        for (let i = recent.length - 1; i >= 0; i--) {
+          const h = recent[i];
+          if (h.player === sideToMove && !h.isCapture) {
+            if (h.from === move.to && h.to === move.from) return true;
+          }
+        }
+        return false;
+      }
+
+      function evaluateMoveSafety(board, move, sideToMove, history) {
+        const enemySide = getOpponentColor(sideToMove);
+        const nextBoard = [...board];
+        nextBoard[move.from] = null;
+        for (let i = 0; i < move.captured.length; i++) nextBoard[move.captured[i]] = null;
+        nextBoard[move.to] = sideToMove;
+
+        const opponentCaptures = getAllCaptureMoves(nextBoard, enemySide);
+        const ourCaptures = move.captured.length;
+        let oppMaxCounter = 0;
+        for (let i = 0; i < opponentCaptures.length; i++) {
+          const count = opponentCaptures[i].captured.length;
+          if (count > oppMaxCounter) oppMaxCounter = count;
+        }
+
+        const netGain = ourCaptures - oppMaxCounter;
+        const isLoop = isMoveLoopReversal(move, sideToMove, history);
+        const fromRow = NODES[move.from].row;
+        const toRow = NODES[move.to].row;
+        const progressDelta = sideToMove === 'blue' ? fromRow - toRow : toRow - fromRow;
+
+        // ZERO MATERIAL LOSS RULE:
+        if (!move.isCapture && oppMaxCounter > 0) {
+          return {
+            isBlunder: true,
+            isLoopReversal: isLoop,
+            progressDelta,
+            netGain: -oppMaxCounter,
+            ourCaptures: 0,
+            opponentMaxCounterCaptures: oppMaxCounter,
+            threatCount: 0,
+            isFork: false,
+            safetyScore: -1000000000 - oppMaxCounter * 100000000,
+            explanation: `মারাত্মক আত্মঘাতী ভুল! এই চাল দিলে প্রতিপক্ষ পরবর্তী চালে আপনার ${oppMaxCounter}টি গুটি খেয়ে ফেলবে (শূন্য সুরক্ষা)।`,
+          };
+        }
+
+        if (isLoop) {
+          return {
+            isBlunder: true,
+            isLoopReversal: true,
+            progressDelta,
+            netGain: 0,
+            ourCaptures: 0,
+            opponentMaxCounterCaptures: 0,
+            threatCount: 0,
+            isFork: false,
+            safetyScore: -1000000000,
+            explanation: 'লুপ সতর্কবার্তা! একই গুটি বারবার সামনে-পিছনে ঘোরানো হচ্ছে। নতুন অবস্থানে মুভ করুন।',
+          };
+        }
+
+        const ourFutureCaptures = getAllCaptureMoves(nextBoard, sideToMove);
+        const threatened = new Set(ourFutureCaptures.flatMap((c) => c.captured));
+        const threatCount = threatened.size;
+        const isFork = threatCount >= 2;
+        const hasMultiJump = ourFutureCaptures.some((c) => c.captured.length >= 2);
+        const oppMovesAfter = getLegalMoves(nextBoard, enemySide).length;
+
+        if (oppMovesAfter === 0) {
+          return {
+            isBlunder: false,
+            isLoopReversal: false,
+            progressDelta,
+            netGain: ourCaptures,
+            ourCaptures,
+            opponentMaxCounterCaptures: 0,
+            threatCount,
+            isFork,
+            safetyScore: 200000,
+            explanation: 'অনিবার্য বিজয়! প্রতিপক্ষ সম্পূর্ণরূপে অবরুদ্ধ ও চালহীন (Checkmate/Blocked)।',
+          };
+        }
+
+        if (move.isCapture) {
+          if (netGain < 0) {
+            return {
+              isBlunder: true,
+              isLoopReversal: false,
+              progressDelta,
+              netGain,
+              ourCaptures,
+              opponentMaxCounterCaptures: oppMaxCounter,
+              threatCount,
+              isFork,
+              safetyScore: -1000000000 + netGain * 100000000,
+              explanation: `ক্ষতিকর আত্মঘাতী বিনিময়! আপনি ${ourCaptures}টি খাবেন কিন্তু প্রতিপক্ষ পাল্টা ${oppMaxCounter}টি খাবে।`,
+            };
+          } else if (oppMaxCounter === 0) {
+            let capScore = 10000000 + 5000000 * ourCaptures;
+            if (ourCaptures >= 2) capScore += 3000000 * (ourCaptures - 1);
+            if (isFork) capScore += 1000000;
+            if (hasMultiJump) capScore += 1000000;
+            return {
+              isBlunder: false,
+              isLoopReversal: false,
+              progressDelta,
+              netGain,
+              ourCaptures,
+              opponentMaxCounterCaptures: 0,
+              threatCount,
+              isFork,
+              safetyScore: capScore,
+              explanation: ourCaptures >= 2 ? `মারাত্মক মাল্টি-জাম্প! প্রতিপক্ষের ${ourCaptures}টি গুটি সাফ (শূন্য ক্ষতি)।` : `নিখুঁত ক্যাপচার! প্রতিপক্ষের ১টি গুটি খতম (আপনার কোনো গুটি হারাবে না)।`,
+            };
+          } else {
+            return {
+              isBlunder: false,
+              isLoopReversal: false,
+              progressDelta,
+              netGain,
+              ourCaptures,
+              opponentMaxCounterCaptures: oppMaxCounter,
+              threatCount,
+              isFork,
+              safetyScore: netGain > 0 ? 500000 * netGain : -5000000,
+              explanation: netGain > 0 ? `লাভজনক মাল্টি-ট্রেড! (${ourCaptures}টি বনাম ${oppMaxCounter}টি)` : `বিনিময় চাল (${ourCaptures}টি বনাম ${oppMaxCounter}টি)।`,
+            };
+          }
+        }
+
+        // Safe Quiet Move
+        let bonus = 0;
+        let explanation = 'নিরাপদ কৌশলগত অবস্থান (শূন্য ক্ষতি)।';
+
+        const toIs18 = move.to === 18;
+        const toIsWing = SIDE_WING_HUBS.includes(move.to);
+        const toIsGrandHub = GRAND_HUBS.includes(move.to);
+        const toIsCol2 = CENTRAL_COLUMN_NODES.includes(move.to);
+        const toIsFlank = SIDE_WING_FLANK_NODES.includes(move.to);
+        const toIsCorridor = CENTRAL_CORRIDORS.includes(move.to);
+        const toIsDeadEnd = DEAD_END_NODES.includes(move.to);
+        const toIsFringe = FRINGE_CORNER_NODES.includes(move.to);
+
+        if (toIsDeadEnd || toIsFringe) {
+          return {
+            isBlunder: true,
+            isLoopReversal: false,
+            progressDelta,
+            netGain: 0,
+            ourCaptures: 0,
+            opponentMaxCounterCaptures: 0,
+            threatCount: 0,
+            isFork: false,
+            safetyScore: -500000,
+            explanation: 'কোণায় বা ডেড-এন্ডে গুটি লুকিয়ে ফলস সেফটি খোঁজা নিষিদ্ধ! নিজেকে অবরুদ্ধ করার মারাত্মক ভুল।',
+          };
+        }
+
+        if (isFork) {
+          bonus += 85000 + (threatCount - 2) * 25000;
+          explanation = toIs18 || toIsGrandHub ? `ব্যাকবোন থেকে বিধ্বংসী ফোর্ক (Fork)! একসাথে ${threatCount}টি গুটি শিকারের ফাঁদ।` : `বিধ্বংসী ফোর্ক (Fork)! একসাথে ${threatCount}টি গুটি শিকারের ফাঁদ।`;
+        } else if (hasMultiJump) {
+          bonus += 75000;
+          explanation = 'ফিউচার কম্বিনেশন ট্র্যাপ! পরবর্তী চালে মাল্টি-জাম্পে গুটি সাফ করার সুযোগ।';
+        } else if (threatCount === 1) {
+          bonus += 32000;
+          explanation = toIs18 ? 'সেন্ট্রাল নোড ১৮ দখল ও সরাসরি আক্রমণ! কেন্দ্র থেকে গুটি খাওয়ার তাৎক্ষণিক হুমকি।' : toIsWing ? 'সাইড উইং থেকে ক্ষিপ্র আক্রমণ! সরাসরি গুটি শিকারের হুমকি।' : 'আক্রমণাত্মক ফাঁদ! পরের চালেই গুটি খাওয়ার সরাসরি হুমকি।';
+        }
+
+        if (toIs18) {
+          bonus += 32000;
+          if (explanation.includes('নিরাপদ কৌশলগত')) explanation = 'সেন্ট্রাল নোড ১৮ দখল! সম্পূর্ণ বোর্ডের ব্যাকবোন ও ক্রসিং নিয়ন্ত্রণ।';
+        } else if (toIsWing) {
+          bonus += 25000;
+          if (explanation.includes('নিরাপদ কৌশলগত')) explanation = 'সাইড ও উইং পজিশন (Wing Hub) দখল! পার্শ্বদেশ থেকে আক্রমণ ও সম্পূর্ণ নিয়ন্ত্রণ।';
+        } else if (toIsGrandHub) {
+          bonus += 22000;
+          if (explanation.includes('নিরাপদ কৌশলগত')) explanation = 'ব্যাকবোনের মূল হাব দখল! আটদিকের সংযোগ ও ডায়াগনাল লাইনে সর্বোচ্চ নিয়ন্ত্রণ।';
+        } else if (toIsCol2) {
+          bonus += 15000;
+          if (explanation.includes('নিরাপদ কৌশলগত')) explanation = 'সেন্ট্রাল কলামের মূল মেরুদণ্ড (Backbone) শক্ত অবস্থান ও নিয়ন্ত্রণ।';
+        } else if (toIsFlank) {
+          bonus += 12500;
+          if (explanation.includes('নিরাপদ কৌশলগত')) explanation = 'সাইড ফ্ল্যাঙ্ক (Wing Flank) নিয়ন্ত্রণ ও পার্শ্ব দিক থেকে সুরক্ষিত অবস্থান।';
+        } else if (toIsCorridor) {
+          bonus += 11000;
+        }
+
+        if (progressDelta > 0) bonus += progressDelta * 5000;
+        else if (progressDelta < 0) bonus -= 6000 * Math.abs(progressDelta);
+
+        return {
+          isBlunder: false,
+          isLoopReversal: false,
+          progressDelta,
+          netGain: 0,
+          ourCaptures: 0,
+          opponentMaxCounterCaptures: 0,
+          threatCount,
+          isFork,
+          safetyScore: bonus,
+          explanation,
+        };
+      }
+
+      function evaluateBoard(board, povColor) {
+        let blueScore = 0;
+        let redScore = 0;
+        let blueMobility = 0;
+        let redMobility = 0;
+        let blueJumps = 0;
+        let redJumps = 0;
+        let blueGrandHubCount = 0;
+        let redGrandHubCount = 0;
+        let blueCol2Count = 0;
+        let redCol2Count = 0;
+        let blueHoldsCenter = false;
+        let redHoldsCenter = false;
+        let blueHoldsLeftWing = false;
+        let blueHoldsRightWing = false;
+        let redHoldsLeftWing = false;
+        let redHoldsRightWing = false;
+        let blueDeadEndCount = 0;
+        let redDeadEndCount = 0;
+
+        for (let i = 0; i < 37; i++) {
+          const piece = board[i];
+          if (piece === null) continue;
+          const neighbors = ADJACENCY[i];
+          const r = NODES[i].row;
+          const isDeadEnd = DEAD_END_NODES.includes(i);
+          const isFringe = FRINGE_CORNER_NODES.includes(i);
+
+          if (piece === 'blue') {
+            blueScore += 100000 + POSITION_WEIGHTS[i];
+            if (r <= 3) blueScore += (4 - r) * 90;
+            if (isDeadEnd) blueDeadEndCount++;
+            else if (isFringe) blueScore -= 800;
+
+            if (i === 18) { blueHoldsCenter = true; blueScore += 2500; }
+            if (i === 16) { blueHoldsLeftWing = true; blueScore += 2200; }
+            else if (i === 20) { blueHoldsRightWing = true; blueScore += 2200; }
+            else if (SIDE_WING_FLANK_NODES.includes(i)) blueScore += 800;
+
+            if (GRAND_HUBS.includes(i)) { blueGrandHubCount++; blueScore += 1200; }
+            if (CENTRAL_COLUMN_NODES.includes(i)) { blueCol2Count++; blueScore += 600; }
+
+            for (let j = 0; j < neighbors.length; j++) {
+              const n = board[neighbors[j]];
+              if (n === 'blue') blueScore += 25;
+              else if (n === null) blueMobility++;
+            }
+            const possible = JUMPS_FROM[i];
+            for (let j = 0; j < possible.length; j++) {
+              if (board[possible[j].over] === 'red' && board[possible[j].to] === null) blueJumps++;
+            }
+          } else {
+            redScore += 100000 + POSITION_WEIGHTS[i];
+            if (r >= 5) redScore += (r - 4) * 90;
+            if (isDeadEnd) redDeadEndCount++;
+            else if (isFringe) redScore -= 800;
+
+            if (i === 18) { redHoldsCenter = true; redScore += 2500; }
+            if (i === 16) { redHoldsLeftWing = true; redScore += 2200; }
+            else if (i === 20) { redHoldsRightWing = true; redScore += 2200; }
+            else if (SIDE_WING_FLANK_NODES.includes(i)) redScore += 800;
+
+            if (GRAND_HUBS.includes(i)) { redGrandHubCount++; redScore += 1200; }
+            if (CENTRAL_COLUMN_NODES.includes(i)) { redCol2Count++; redScore += 600; }
+
+            for (let j = 0; j < neighbors.length; j++) {
+              const n = board[neighbors[j]];
+              if (n === 'red') redScore += 25;
+              else if (n === null) redMobility++;
+            }
+            const possible = JUMPS_FROM[i];
+            for (let j = 0; j < possible.length; j++) {
+              if (board[possible[j].over] === 'blue' && board[possible[j].to] === null) redJumps++;
+            }
+          }
+        }
+
+        blueScore -= blueDeadEndCount * 2200;
+        redScore -= redDeadEndCount * 2200;
+
+        if (blueHoldsCenter && blueGrandHubCount >= 2) blueScore += 3000;
+        if (redHoldsCenter && redGrandHubCount >= 2) redScore += 3000;
+
+        if (blueHoldsLeftWing && blueHoldsRightWing) blueScore += 2800;
+        if (redHoldsLeftWing && redHoldsRightWing) redScore += 2800;
+
+        if (blueHoldsCenter && (blueHoldsLeftWing || blueHoldsRightWing)) blueScore += 2200;
+        if (redHoldsCenter && (redHoldsLeftWing || redHoldsRightWing)) redScore += 2200;
+
+        if (blueGrandHubCount === 0 && blueCol2Count === 0) blueScore -= 4000;
+        if (redGrandHubCount === 0 && redCol2Count === 0) redScore -= 4000;
+
+        const blueConstriction = blueMobility <= 3 ? (4 - blueMobility) * 4500 : 0;
+        const redConstriction = redMobility <= 3 ? (4 - redMobility) * 4500 : 0;
+
+        const total = (blueScore - redScore) + (blueMobility - redMobility) * 35 + (blueJumps - redJumps) * 6000 + (redConstriction - blueConstriction);
+        return povColor === 'blue' ? total : -total;
+      }
+
+      function checkGameOver(board, currentTurn) {
+        let redCount = 0;
+        let blueCount = 0;
+        for (let i = 0; i < 37; i++) {
+          if (board[i] === 'red') redCount++;
+          else if (board[i] === 'blue') blueCount++;
+        }
+        if (redCount === 0) return { isOver: true, winner: 'you', reason: 'Captured all 16 opponent pieces!' };
+        if (blueCount === 0) return { isOver: true, winner: 'opponent', reason: 'Opponent captured all 16 pieces!' };
+
+        const moves = getLegalMoves(board, currentTurn);
+        if (moves.length === 0) {
+          const winner = currentTurn === 'blue' ? 'opponent' : 'you';
+          const reason = currentTurn === 'blue' ? 'You have no legal moves left (fully blocked)!' : 'Opponent has no legal moves left (fully blocked)!';
+          return { isOver: true, winner, reason };
+        }
+        return { isOver: false, winner: null };
+      }
+
+      // ==========================================
+      // 4. MINIMAX ADVERSARIAL AI ENGINE
+      // ==========================================
+      const ZOBRIST_PIECES = new BigInt64Array(37 * 2);
+      function xorShift64(state) {
+        let x = state;
+        x ^= (x << 13n) & 0xffffffffffffffffn;
+        x ^= (x >> 7n) & 0xffffffffffffffffn;
+        x ^= (x << 17n) & 0xffffffffffffffffn;
+        return x & 0xffffffffffffffffn;
+      }
+      let seed = 0x2b992ddfa23249d6n;
+      for (let i = 0; i < 37 * 2; i++) {
+        seed = xorShift64(seed);
+        ZOBRIST_PIECES[i] = seed;
+      }
+      const ZOBRIST_SIDE = xorShift64(seed);
+
+      function computeBoardHash(board, sideToMove) {
+        let hash = 0n;
+        for (let i = 0; i < 37; i++) {
+          const p = board[i];
+          if (p === 'blue') hash ^= ZOBRIST_PIECES[i * 2];
+          else if (p === 'red') hash ^= ZOBRIST_PIECES[i * 2 + 1];
+        }
+        if (sideToMove === 'red') hash ^= ZOBRIST_SIDE;
+        return hash;
+      }
+
+      function getBoardKey(board, side) {
+        let key = side === 'blue' ? 'B:' : 'R:';
+        for (let i = 0; i < 37; i++) {
+          const p = board[i];
+          key += p === 'blue' ? '1' : p === 'red' ? '2' : '0';
+        }
+        return key;
+      }
+
+      function getMoveHashDelta(move, pieceColor) {
+        const pIdx = pieceColor === 'blue' ? 0 : 1;
+        const oppIdx = 1 - pIdx;
+        let delta = ZOBRIST_PIECES[move.from * 2 + pIdx] ^ ZOBRIST_PIECES[move.to * 2 + pIdx] ^ ZOBRIST_SIDE;
+        for (let i = 0; i < move.captured.length; i++) {
+          delta ^= ZOBRIST_PIECES[move.captured[i] * 2 + oppIdx];
+        }
+        return delta;
+      }
+
+      function applyMoveInPlace(board, move, pieceColor) {
+        board[move.from] = null;
+        for (let i = 0; i < move.captured.length; i++) board[move.captured[i]] = null;
+        board[move.to] = pieceColor;
+      }
+
+      function undoMoveInPlace(board, move, pieceColor, enemyColor) {
+        board[move.to] = null;
+        for (let i = 0; i < move.captured.length; i++) board[move.captured[i]] = enemyColor;
+        board[move.from] = pieceColor;
+      }
+
+      class SearchTimeoutError extends Error {}
+
+      class AdversarialEngine {
+        constructor() {
+          this.tt = new Map();
+          this.searchAge = 0;
+          this.nodesVisited = 0;
+          this.deadline = 0;
+          this.killerMoves = Array.from({ length: 32 }, () => [null, null]);
+          this.historyTable = new Int32Array(37 * 37);
+        }
+
+        storeTT(hash, depth, score, flag, bestMove) {
+          const existing = this.tt.get(hash);
+          if (!existing || depth >= existing.depth || flag === 'exact') {
+            this.tt.set(hash, { depth, score, flag, bestMove: bestMove || existing?.bestMove, age: this.searchAge });
+          }
+          if (this.tt.size > 150000) {
+            const targetPruneAge = this.searchAge - 2;
+            for (const [k, v] of this.tt.entries()) {
+              if (v.age < targetPruneAge) this.tt.delete(k);
+              if (this.tt.size <= 120000) break;
+            }
+          }
+        }
+
+        orderMovesInPlace(moves, ply, hashMove) {
+          if (moves.length <= 1) return;
+          if (hashMove) {
+            for (let i = 0; i < moves.length; i++) {
+              if (moves[i].from === hashMove.from && moves[i].to === hashMove.to) {
+                if (i !== 0) {
+                  const tmp = moves[0];
+                  moves[0] = moves[i];
+                  moves[i] = tmp;
+                }
+                break;
+              }
+            }
+          }
+          const startIdx = hashMove && moves[0].from === hashMove.from && moves[0].to === hashMove.to ? 1 : 0;
+          if (startIdx >= moves.length - 1) return;
+
+          const km1 = ply < 32 ? this.killerMoves[ply][0] : null;
+          const km2 = ply < 32 ? this.killerMoves[ply][1] : null;
+          const scores = new Int32Array(moves.length);
+
+          for (let i = startIdx; i < moves.length; i++) {
+            const m = moves[i];
+            if (m.isCapture) {
+              scores[i] = 5000000 + m.captured.length * 100000;
+            } else {
+              if (km1 && m.from === km1.from && m.to === km1.to) scores[i] = 2000000;
+              else if (km2 && m.from === km2.from && m.to === km2.to) scores[i] = 1500000;
+              else {
+                let posBonus = (POSITION_WEIGHTS[m.to] || 0) * 35;
+                if (m.to === 18) posBonus += 250000;
+                else if (SIDE_WING_HUBS.includes(m.to)) posBonus += 180000;
+                else if (GRAND_HUBS.includes(m.to)) posBonus += 150000;
+                else if (CENTRAL_COLUMN_NODES.includes(m.to)) posBonus += 70000;
+                else if (SIDE_WING_FLANK_NODES.includes(m.to)) posBonus += 60000;
+                else if (CENTRAL_CORRIDORS.includes(m.to)) posBonus += 50000;
+                scores[i] = this.historyTable[m.from * 37 + m.to] + posBonus;
+              }
+            }
+          }
+
+          for (let i = startIdx + 1; i < moves.length; i++) {
+            const keyMove = moves[i];
+            const keyScore = scores[i];
+            let j = i - 1;
+            while (j >= startIdx && scores[j] < keyScore) {
+              moves[j + 1] = moves[j];
+              scores[j + 1] = scores[j];
+              j--;
+            }
+            moves[j + 1] = keyMove;
+            scores[j + 1] = keyScore;
+          }
+        }
+
+        quiescence(board, alpha, beta, sideToMove, rootSide, qDepth, currentHash) {
+          this.nodesVisited++;
+          if ((this.nodesVisited & 1023) === 0 && performance.now() > this.deadline) {
+            throw new SearchTimeoutError();
+          }
+          const enemySide = getOpponentColor(sideToMove);
+          const isMaximizing = sideToMove === rootSide;
+          const ttEntry = this.tt.get(currentHash);
+          if (ttEntry) {
+            if (ttEntry.flag === 'exact') return ttEntry.score;
+            if (ttEntry.flag === 'lower' && ttEntry.score > alpha) alpha = ttEntry.score;
+            if (ttEntry.flag === 'upper' && ttEntry.score < beta) beta = ttEntry.score;
+            if (alpha >= beta) return ttEntry.score;
+          }
+
+          const standPat = evaluateBoard(board, rootSide);
+          const captures = getAllCaptureMoves(board, sideToMove);
+          if (captures.length === 0 || qDepth <= 0) return standPat;
+
+          this.orderMovesInPlace(captures, 0, ttEntry?.bestMove);
+
+          if (isMaximizing) {
+            let maxEval = standPat;
+            if (maxEval > alpha) alpha = maxEval;
+            if (alpha >= beta) return maxEval;
+
+            for (let i = 0; i < captures.length; i++) {
+              const move = captures[i];
+              const delta = getMoveHashDelta(move, sideToMove);
+              applyMoveInPlace(board, move, sideToMove);
+              currentHash ^= delta;
+              const score = this.quiescence(board, alpha, beta, enemySide, rootSide, qDepth - 1, currentHash);
+              undoMoveInPlace(board, move, sideToMove, enemySide);
+              currentHash ^= delta;
+              if (score > maxEval) maxEval = score;
+              if (score > alpha) alpha = score;
+              if (alpha >= beta) break;
+            }
+            return maxEval;
+          } else {
+            let minEval = standPat;
+            if (minEval < beta) beta = minEval;
+            if (alpha >= beta) return minEval;
+
+            for (let i = 0; i < captures.length; i++) {
+              const move = captures[i];
+              const delta = getMoveHashDelta(move, sideToMove);
+              applyMoveInPlace(board, move, sideToMove);
+              currentHash ^= delta;
+              const score = this.quiescence(board, alpha, beta, enemySide, rootSide, qDepth - 1, currentHash);
+              undoMoveInPlace(board, move, sideToMove, enemySide);
+              currentHash ^= delta;
+              if (score < minEval) minEval = score;
+              if (score < beta) beta = score;
+              if (alpha >= beta) break;
+            }
+            return minEval;
+          }
+        }
+
+        minimax(board, depth, alpha, beta, sideToMove, rootSide, ply, currentHash) {
+          this.nodesVisited++;
+          if ((this.nodesVisited & 1023) === 0 && performance.now() > this.deadline) {
+            throw new SearchTimeoutError();
+          }
+          const enemySide = getOpponentColor(sideToMove);
+          const ttEntry = this.tt.get(currentHash);
+          if (ttEntry && ttEntry.depth >= depth) {
+            if (ttEntry.flag === 'exact') return { score: ttEntry.score, bestMove: ttEntry.bestMove };
+            if (ttEntry.flag === 'lower' && ttEntry.score > alpha) alpha = ttEntry.score;
+            if (ttEntry.flag === 'upper' && ttEntry.score < beta) beta = ttEntry.score;
+            if (alpha >= beta) return { score: ttEntry.score, bestMove: ttEntry.bestMove };
+          }
+
+          const legalMoves = getLegalMoves(board, sideToMove);
+          if (legalMoves.length === 0) {
+            return { score: sideToMove === rootSide ? -800000 - depth : 800000 + depth };
+          }
+          if (depth <= 0) {
+            const qScore = this.quiescence(board, alpha, beta, sideToMove, rootSide, 6, currentHash);
+            return { score: qScore };
+          }
+
+          const isMaximizing = sideToMove === rootSide;
+          this.orderMovesInPlace(legalMoves, ply, ttEntry?.bestMove);
+          let bestMove = legalMoves[0];
+          const originalAlpha = alpha;
+          const originalBeta = beta;
+
+          if (isMaximizing) {
+            let maxEval = -Infinity;
+            for (let i = 0; i < legalMoves.length; i++) {
+              const move = legalMoves[i];
+              const delta = getMoveHashDelta(move, sideToMove);
+              applyMoveInPlace(board, move, sideToMove);
+              currentHash ^= delta;
+              const res = this.minimax(board, depth - 1, alpha, beta, enemySide, rootSide, ply + 1, currentHash);
+              undoMoveInPlace(board, move, sideToMove, enemySide);
+              currentHash ^= delta;
+
+              if (res.score > maxEval) { maxEval = res.score; bestMove = move; }
+              if (res.score > alpha) alpha = res.score;
+              if (alpha >= beta) {
+                if (!move.isCapture && ply < 32) {
+                  this.killerMoves[ply][1] = this.killerMoves[ply][0];
+                  this.killerMoves[ply][0] = move;
+                  this.historyTable[move.from * 37 + move.to] = Math.min(200000, this.historyTable[move.from * 37 + move.to] + depth * depth * 32);
+                }
+                break;
+              }
+            }
+            let flag = 'exact';
+            if (maxEval <= originalAlpha) flag = 'upper';
+            else if (maxEval >= beta) flag = 'lower';
+            this.storeTT(currentHash, depth, maxEval, flag, bestMove);
+            return { score: maxEval, bestMove };
+          } else {
+            let minEval = Infinity;
+            for (let i = 0; i < legalMoves.length; i++) {
+              const move = legalMoves[i];
+              const delta = getMoveHashDelta(move, sideToMove);
+              applyMoveInPlace(board, move, sideToMove);
+              currentHash ^= delta;
+              const res = this.minimax(board, depth - 1, alpha, beta, enemySide, rootSide, ply + 1, currentHash);
+              undoMoveInPlace(board, move, sideToMove, enemySide);
+              currentHash ^= delta;
+
+              if (res.score < minEval) { minEval = res.score; bestMove = move; }
+              if (res.score < beta) beta = res.score;
+              if (alpha >= beta) {
+                if (!move.isCapture && ply < 32) {
+                  this.killerMoves[ply][1] = this.killerMoves[ply][0];
+                  this.killerMoves[ply][0] = move;
+                  this.historyTable[move.from * 37 + move.to] = Math.min(200000, this.historyTable[move.from * 37 + move.to] + depth * depth * 32);
+                }
+                break;
+              }
+            }
+            let flag = 'exact';
+            if (minEval <= originalAlpha) flag = 'upper';
+            else if (minEval >= originalBeta) flag = 'lower';
+            this.storeTT(currentHash, depth, minEval, flag, bestMove);
+            return { score: minEval, bestMove };
+          }
+        }
+
+        async searchRankedMoves(board, sideToMove, timeBudgetMs, history, onProgress, abortSignal) {
+          const startTime = performance.now();
+          this.deadline = startTime + timeBudgetMs;
+          this.nodesVisited = 0;
+          this.searchAge++;
+
+          for (let i = 0; i < this.historyTable.length; i++) {
+            this.historyTable[i] = (this.historyTable[i] * 3) >> 2;
+          }
+          this.killerMoves = Array.from({ length: 32 }, () => [null, null]);
+
+          const enemySide = getOpponentColor(sideToMove);
+          const legalMoves = getLegalMoves(board, sideToMove);
+          if (legalMoves.length === 0) throw new Error('No legal moves');
+
+          const candidateEvaluations = legalMoves.map((m) => {
+            const safety = evaluateMoveSafety(board, m, sideToMove, history);
+            return {
+              move: m,
+              safetyScore: safety.safetyScore,
+              isBlunder: safety.isBlunder,
+              isLoopReversal: safety.isLoopReversal,
+              progressDelta: safety.progressDelta,
+              opponentMaxCounterCaptures: safety.opponentMaxCounterCaptures,
+              netGain: safety.netGain,
+              ourCaptures: safety.ourCaptures,
+              threatCount: safety.threatCount,
+              isFork: safety.isFork,
+              explanation: safety.explanation,
+              minimaxScore: 0,
+              combinedScore: safety.safetyScore,
+            };
+          });
+
+          const sortCandidates = (a, b) => {
+            if (!a.isBlunder && b.isBlunder) return -1;
+            if (a.isBlunder && !b.isBlunder) return 1;
+            if (!a.isLoopReversal && b.isLoopReversal) return -1;
+            if (a.isLoopReversal && !b.isLoopReversal) return 1;
+
+            const aLoss = a.opponentMaxCounterCaptures || 0;
+            const bLoss = b.opponentMaxCounterCaptures || 0;
+            if (aLoss === 0 && bLoss > 0) return -1;
+            if (aLoss > 0 && bLoss === 0) return 1;
+            if (aLoss !== bLoss) return aLoss - bLoss;
+
+            if (a.move.isCapture && b.move.isCapture && a.move.captured.length !== b.move.captured.length) {
+              return b.move.captured.length - a.move.captured.length;
+            }
+            if (a.move.isCapture && !b.move.isCapture) return -1;
+            if (!a.move.isCapture && b.move.isCapture) return 1;
+
+            if (!a.move.isCapture && !b.move.isCapture) {
+              if (a.isFork && !b.isFork) return -1;
+              if (!a.isFork && b.isFork) return 1;
+              if (a.isFork && b.isFork && a.threatCount !== b.threatCount) return b.threatCount - a.threatCount;
+
+              const aIs18 = a.move.to === 18;
+              const bIs18 = b.move.to === 18;
+              if (aIs18 && !bIs18 && a.combinedScore >= b.combinedScore - 2500) return -1;
+              if (!aIs18 && bIs18 && b.combinedScore >= a.combinedScore - 2500) return 1;
+
+              const aIsWing = SIDE_WING_HUBS.includes(a.move.to);
+              const bIsWing = SIDE_WING_HUBS.includes(b.move.to);
+              if (aIsWing && !bIsWing && a.combinedScore >= b.combinedScore - 2200) return -1;
+              if (!aIsWing && bIsWing && b.combinedScore >= a.combinedScore - 2200) return 1;
+
+              const aIsHub = GRAND_HUBS.includes(a.move.to);
+              const bIsHub = GRAND_HUBS.includes(b.move.to);
+              if (aIsHub && !bIsHub && a.combinedScore >= b.combinedScore - 2000) return -1;
+              if (!aIsHub && bIsHub && b.combinedScore >= a.combinedScore - 2000) return 1;
+
+              const aIsCol2 = CENTRAL_COLUMN_NODES.includes(a.move.to);
+              const bIsCol2 = CENTRAL_COLUMN_NODES.includes(b.move.to);
+              if (aIsCol2 && !bIsCol2 && a.combinedScore >= b.combinedScore - 1200) return -1;
+              if (!aIsCol2 && bIsCol2 && b.combinedScore >= a.combinedScore - 1200) return 1;
+            }
+
+            const diff = b.combinedScore - a.combinedScore;
+            if (Math.abs(diff) < 600 && a.progressDelta !== b.progressDelta) {
+              return b.progressDelta - a.progressDelta;
+            }
+            return diff;
+          };
+
+          const boardClone = [...board];
+          const rootHash = computeBoardHash(board, sideToMove);
+          let completedDepth = 1;
+
+          const rootEntry = this.tt.get(rootHash);
+          if (rootEntry?.bestMove) {
+            const idx = candidateEvaluations.findIndex((c) => c.move.from === rootEntry.bestMove.from && c.move.to === rootEntry.bestMove.to);
+            if (idx > 0) {
+              const top = candidateEvaluations[idx];
+              candidateEvaluations.splice(idx, 1);
+              candidateEvaluations.unshift(top);
+            }
+          } else {
+            candidateEvaluations.sort(sortCandidates);
+          }
+
+          // Target deep iterative search up to 20 plies within the requested budget
+          for (let depth = 1; depth <= 20; depth++) {
+            try {
+              if (abortSignal?.aborted) break;
+              await new Promise((r) => setTimeout(r, 0));
+
+              const elapsed = performance.now() - startTime;
+              // Check time budget: must spend the configured search duration
+              if (depth > 4 && elapsed >= timeBudgetMs) break;
+
+              for (let i = 0; i < candidateEvaluations.length; i++) {
+                if (abortSignal?.aborted) break;
+                if (depth > 2 && performance.now() >= this.deadline) throw new SearchTimeoutError();
+
+                const item = candidateEvaluations[i];
+                const delta = getMoveHashDelta(item.move, sideToMove);
+                applyMoveInPlace(boardClone, item.move, sideToMove);
+                const nextHash = rootHash ^ delta;
+
+                const res = this.minimax(boardClone, depth - 1, -Infinity, Infinity, enemySide, sideToMove, 1, nextHash);
+                undoMoveInPlace(boardClone, item.move, sideToMove, enemySide);
+
+                item.minimaxScore = res.score;
+                item.combinedScore = res.score + item.safetyScore;
+
+                if (depth >= 5 && i > 0 && i % 2 === 0) {
+                  await new Promise((r) => setTimeout(r, 0));
+                }
+              }
+
+              if (abortSignal?.aborted) break;
+              completedDepth = depth;
+              candidateEvaluations.sort(sortCandidates);
+
+              this.storeTT(rootHash, completedDepth, candidateEvaluations[0].combinedScore, 'exact', candidateEvaluations[0].move);
+              onProgress?.(completedDepth, candidateEvaluations[0].move, candidateEvaluations[0].combinedScore, Math.round(performance.now() - startTime));
+            } catch (err) {
+              if (err instanceof SearchTimeoutError) break;
+              throw err;
+            }
+          }
+
+          const safeCandidates = candidateEvaluations.filter((c) => !c.isBlunder && !c.isLoopReversal);
+          const pool = safeCandidates.length > 0 ? safeCandidates : candidateEvaluations.filter((c) => !c.isLoopReversal);
+          const finalPool = pool.length > 0 ? pool : candidateEvaluations;
+
+          const zeroLoss = finalPool.filter((c) => (c.opponentMaxCounterCaptures || 0) === 0);
+          const movesToShow = zeroLoss.length > 0 ? zeroLoss : finalPool;
+          movesToShow.sort(sortCandidates);
+
+          const ranked = movesToShow.map((c) => ({
+            move: c.move,
+            score: c.combinedScore,
+            isBlunder: c.isBlunder,
+            isLoopReversal: c.isLoopReversal,
+            progressDelta: c.progressDelta,
+            threatCount: c.threatCount,
+            isFork: c.isFork,
+            explanation: c.explanation,
+          }));
+
+          return {
+            bestMove: ranked[0].move,
+            depthReached: completedDepth,
+            score: ranked[0].score,
+            timeMs: Math.round(performance.now() - startTime),
+            rank: 1,
+            totalCandidates: ranked.length,
+            isBlunderFree: !ranked[0].isBlunder,
+            explanation: ranked[0].explanation,
+            rankedMoves: ranked,
+          };
+        }
+      }
+
+      const aiEngine = new AdversarialEngine();
+
+      // ==========================================
+      // 5. GAME CONTROLLER & SETTINGS
+      // ==========================================
+      const settings = {
+        sound: true,
+        hintTime: 10, // Default 10 seconds (5s to 20s configurable)
+      };
+
+      // Load settings
+      try {
+        const saved = localStorage.getItem('sholo_guti_settings');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (typeof parsed.sound === 'boolean') settings.sound = parsed.sound;
+          if (typeof parsed.hintTime === 'number' && parsed.hintTime >= 5 && parsed.hintTime <= 20) {
+            settings.hintTime = parsed.hintTime;
+          }
+        }
+      } catch(e) {}
+      sound.enabled = settings.sound;
+
+      // Game state variables
+      let board = getInitialBoard();
+      let currentTurn = 'blue'; // 'blue' (You) or 'red' (Opponent)
+      let scoreYou = 0;
+      let scoreOpponent = 0;
+      let selectedNode = null;
+      let validDestinations = [];
+      let inChainCapture = false;
+      let activeChainFrom = null;
+      let chainOrigin = null;
+      let moveHistory = [];
+      let gameOver = false;
+
+      // Hint & Analysis state
+      let isThinking = false;
+      let thinkingDepth = 1;
+      let abortController = null;
+      let thinkingInterval = null;
+      let cachedBoardKey = null;
+      let cachedRankedMoves = [];
+      let currentHintIndex = 0;
+      let activeHintMove = null;
+
+      // DOM Elements
+      const homeScreen = document.getElementById('home-screen');
+      const gameScreen = document.getElementById('game-screen');
+      const svgEdges = document.getElementById('svg-edges');
+      const svgPits = document.getElementById('svg-pits');
+      const svgHintLayer = document.getElementById('svg-hint-layer');
+      const svgDestinations = document.getElementById('svg-destinations');
+      const svgPawns = document.getElementById('svg-pawns');
+
+      const youCard = document.getElementById('you-card');
+      const oppCard = document.getElementById('opp-card');
+      const youScoreElem = document.getElementById('you-score');
+      const oppScoreElem = document.getElementById('opp-score');
+      const mandatoryToast = document.getElementById('mandatory-toast');
+
+      const thinkingOverlay = document.getElementById('thinking-overlay');
+      const thinkingDepthVal = document.getElementById('thinking-depth-val');
+      const thinkingTimeVal = document.getElementById('thinking-time-val');
+      const thinkingTargetVal = document.getElementById('thinking-target-val');
+      const thinkingProgressFill = document.getElementById('thinking-progress-fill');
+      const cancelThinkingBtn = document.getElementById('cancel-thinking-btn');
+
+      const hintBanner = document.getElementById('hint-banner');
+      const hintRankPill = document.getElementById('hint-rank-pill');
+      const hintSafePill = document.getElementById('hint-safe-pill');
+      const hintDescText = document.getElementById('hint-desc-text');
+      const hintDepthTag = document.getElementById('hint-depth-tag');
+      const hintAltNote = document.getElementById('hint-alt-note');
+      const hintBtnLabel = document.getElementById('hint-btn-label');
+      const dismissHintBtn = document.getElementById('dismiss-hint-btn');
+      const hintBtn = document.getElementById('hint-btn');
+
+      // Modals
+      const settingsModal = document.getElementById('settings-modal');
+      const soundToggleInput = document.getElementById('sound-toggle-input');
+      const hintTimerSlider = document.getElementById('hint-timer-slider');
+      const timerDisplayVal = document.getElementById('timer-display-val');
+      const timerPills = document.querySelectorAll('.timer-pill');
+      const closeSettingsBtn = document.getElementById('close-settings-btn');
+
+      const firstMoveModal = document.getElementById('first-move-modal');
+      const leaveModal = document.getElementById('leave-modal');
+      const gameoverModal = document.getElementById('gameover-modal');
+
+      // Setup initial board lines and background pits in SVG
+      function renderBoardBackground() {
+        // Edges
+        let edgesHtml = '';
+        for (const edge of EDGES) {
+          const n1 = NODES[edge.from];
+          const n2 = NODES[edge.to];
+          edgesHtml += `
+            <line x1="${n1.x}" y1="${n1.y}" x2="${n2.x}" y2="${n2.y}" stroke="#42220e" stroke-width="4.5" stroke-linecap="round" />
+            <line x1="${n1.x}" y1="${n1.y}" x2="${n2.x}" y2="${n2.y}" stroke="#6d3916" stroke-width="2.5" stroke-linecap="round" />
+          `;
+        }
+        svgEdges.innerHTML = edgesHtml;
+
+        // Pits
+        let pitsHtml = '';
+        for (const node of NODES) {
+          pitsHtml += `
+            <circle cx="${node.x}" cy="${node.y}" r="5.5" fill="#311909" />
+            <circle cx="${node.x}" cy="${node.y}" r="3.2" fill="#8d562c" />
+            <circle cx="${node.x - 0.7}" cy="${node.y - 0.7}" r="1" fill="#fcd34d" opacity="0.6" />
+          `;
+        }
+        svgPits.innerHTML = pitsHtml;
+      }
+
+      // Render interactive board layers (Destinations, Pawns, Hint overlay)
+      function renderBoard() {
+        // 1. Hint Overlay
+        if (activeHintMove) {
+          let hintHtml = '';
+          // Lines along path
+          for (let i = 1; i < activeHintMove.path.length; i++) {
+            const p1 = NODES[activeHintMove.path[i - 1]];
+            const p2 = NODES[activeHintMove.path[i]];
+            hintHtml += `
+              <line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="#f59e0b" stroke-width="4" stroke-dasharray="6,4" stroke-linecap="round" marker-end="url(#hintArrow)" />
+            `;
+          }
+          // Source ring
+          const src = NODES[activeHintMove.from];
+          hintHtml += `<circle cx="${src.x}" cy="${src.y}" r="19" fill="none" stroke="#f59e0b" stroke-width="3.5" />`;
+
+          // Destination ring
+          const dst = NODES[activeHintMove.to];
+          hintHtml += `<circle cx="${dst.x}" cy="${dst.y}" r="18" fill="rgba(245, 158, 11, 0.25)" stroke="#10b981" stroke-width="3.5" />`;
+
+          // Captured rings
+          for (const cId of activeHintMove.captured) {
+            const cap = NODES[cId];
+            hintHtml += `<circle cx="${cap.x}" cy="${cap.y}" r="20" fill="rgba(239, 68, 68, 0.2)" stroke="#ef4444" stroke-width="3" stroke-dasharray="4,4" />`;
+          }
+          svgHintLayer.innerHTML = hintHtml;
+        } else {
+          svgHintLayer.innerHTML = '';
+        }
+
+        // 2. Valid Destination Targets
+        let destsHtml = '';
+        for (const destId of validDestinations) {
+          const d = NODES[destId];
+          destsHtml += `
+            <g class="dest-target" data-node="${destId}" style="cursor: pointer;">
+              <circle cx="${d.x}" cy="${d.y}" r="22" fill="transparent" />
+              <circle cx="${d.x}" cy="${d.y}" r="16" fill="rgba(34, 197, 94, 0.3)" stroke="#22c55e" stroke-width="2.5" />
+              <circle cx="${d.x}" cy="${d.y}" r="6.5" fill="#16a34a" stroke="#ffffff" stroke-width="1.2" />
+            </g>
+          `;
+        }
+        svgDestinations.innerHTML = destsHtml;
+
+        // 3. Pawns
+        let pawnsHtml = '';
+        for (const node of NODES) {
+          const piece = board[node.id];
+          const isSelected = selectedNode === node.id || (inChainCapture && activeChainFrom === node.id);
+
+          pawnsHtml += `<g class="node-target" data-node="${node.id}" style="cursor: pointer;">`;
+          pawnsHtml += `<circle cx="${node.x}" cy="${node.y}" r="22" fill="transparent" />`;
+
+          if (piece) {
+            pawnsHtml += `
+              <ellipse cx="${node.x}" cy="${node.y + 2.5}" rx="15" ry="13.5" fill="#1e0b02" opacity="0.45" />
+            `;
+            if (isSelected) {
+              pawnsHtml += `
+                <circle cx="${node.x}" cy="${node.y}" r="20" fill="rgba(245, 158, 11, 0.25)" stroke="#fbbf24" stroke-width="3.5" />
+                <circle cx="${node.x}" cy="${node.y}" r="16.5" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.9" />
+              `;
+            }
+            // Rim & Gradient
+            pawnsHtml += `
+              <circle cx="${node.x}" cy="${node.y}" r="15" fill="${piece === 'red' ? '#7f1d1d' : '#1e3a8a'}" stroke="${piece === 'red' ? '#991b1b' : '#2563eb'}" stroke-width="1.5" />
+              <circle cx="${node.x}" cy="${node.y}" r="13.5" fill="url(#${piece === 'red' ? 'redPawnGrad' : 'bluePawnGrad'})" />
+              <circle cx="${node.x}" cy="${node.y}" r="9.5" fill="none" stroke="${piece === 'red' ? '#b91c1c' : '#3b82f6'}" stroke-width="0.8" opacity="0.8" />
+              <g transform="translate(${node.x}, ${node.y}) scale(0.65)" opacity="0.9">
+                <polygon points="0,-8 2,-2 8,0 2,2 0,8 -2,2 -8,0 -2,-2" fill="${piece === 'red' ? '#fca5a5' : '#93c5fd'}" />
+                <polygon points="0,-6 1.5,-1.5 6,0 1.5,1.5 0,6 -1.5,1.5 -6,0 -1.5,-1.5" fill="${piece === 'red' ? '#7f1d1d' : '#1e3a8a'}" opacity="0.4" />
+                <circle cx="0" cy="0" r="1.8" fill="${piece === 'red' ? '#fee2e2' : '#dbeafe'}" />
+              </g>
+              <path d="M ${node.x - 9} ${node.y - 4} A 11 11 0 0 1 ${node.x + 4} ${node.y - 9}" fill="none" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round" opacity="0.6" />
+            `;
+          }
+          pawnsHtml += `</g>`;
+        }
+        svgPawns.innerHTML = pawnsHtml;
+
+        // Player card turn indicators
+        if (currentTurn === 'blue') {
+          youCard.classList.add('active-turn');
+          oppCard.classList.remove('active-turn');
+        } else {
+          oppCard.classList.add('active-turn');
+          youCard.classList.remove('active-turn');
+        }
+
+        youScoreElem.textContent = scoreYou;
+        oppScoreElem.textContent = scoreOpponent;
+      }
+
+      // Handle Node Click
+      function handleNodeClick(nodeId) {
+        if (gameOver || isThinking) return;
+
+        const currentColor = currentTurn;
+        const opponentColor = getOpponentColor(currentColor);
+
+        // Scenario A: In multi-jump capture chain
+        if (inChainCapture && activeChainFrom !== null) {
+          if (validDestinations.includes(nodeId)) {
+            const jump = JUMPS_FROM[activeChainFrom].find(
+              (j) => j.to === nodeId && board[j.over] === opponentColor && board[nodeId] === null
+            );
+            if (jump) {
+              board[activeChainFrom] = null;
+              board[jump.over] = null;
+              board[nodeId] = currentColor;
+
+              if (currentTurn === 'blue') scoreYou++;
+              else scoreOpponent++;
+              sound.playCapture();
+
+              const further = getSingleJumpsFrom(board, nodeId, currentColor);
+              if (further.length > 0) {
+                activeChainFrom = nodeId;
+                selectedNode = nodeId;
+                validDestinations = further.map((j) => j.to);
+                mandatoryToast.textContent = 'Chain capture! You must continue jumping.';
+                mandatoryToast.classList.add('show');
+              } else {
+                moveHistory.push({ from: chainOrigin || activeChainFrom, to: nodeId, player: currentTurn, isCapture: true });
+                chainOrigin = null;
+                inChainCapture = false;
+                activeChainFrom = null;
+                selectedNode = null;
+                validDestinations = [];
+                activeHintMove = null;
+                cachedBoardKey = null;
+                cachedRankedMoves = [];
+                mandatoryToast.classList.remove('show');
+                hintBanner.classList.remove('show');
+
+                currentTurn = getOpponentColor(currentTurn);
+                const status = checkGameOver(board, currentTurn);
+                if (status.isOver) {
+                  gameOver = true;
+                  showGameOver(status);
+                }
+              }
+              renderBoard();
+            }
+          }
+          return;
+        }
+
+        // Scenario B: Standard Turn
+        const piece = board[nodeId];
+
+        // Clicked own piece
+        if (piece === currentColor) {
+          const jumps = getSingleJumpsFrom(board, nodeId, currentColor);
+          const emptyNeighbors = ADJACENCY[nodeId].filter((n) => board[n] === null);
+          const allDests = [...jumps.map((j) => j.to), ...emptyNeighbors];
+
+          if (allDests.length > 0) {
+            selectedNode = nodeId;
+            validDestinations = allDests;
+            mandatoryToast.classList.remove('show');
+            sound.playSelect();
+            renderBoard();
+          }
+          return;
+        }
+
+        // Clicked valid empty destination
+        if (selectedNode !== null && validDestinations.includes(nodeId)) {
+          const jump = JUMPS_FROM[selectedNode].find(
+            (j) => j.to === nodeId && board[j.over] === opponentColor && board[nodeId] === null
+          );
+
+          if (jump) {
+            board[selectedNode] = null;
+            board[jump.over] = null;
+            board[nodeId] = currentColor;
+
+            if (currentTurn === 'blue') scoreYou++;
+            else scoreOpponent++;
+            sound.playCapture();
+
+            const further = getSingleJumpsFrom(board, nodeId, currentColor);
+            if (further.length > 0) {
+              inChainCapture = true;
+              chainOrigin = selectedNode;
+              activeChainFrom = nodeId;
+              selectedNode = nodeId;
+              validDestinations = further.map((j) => j.to);
+              mandatoryToast.textContent = 'Chain capture! You must continue jumping.';
+              mandatoryToast.classList.add('show');
+            } else {
+              moveHistory.push({ from: selectedNode, to: nodeId, player: currentTurn, isCapture: true });
+              chainOrigin = null;
+              selectedNode = null;
+              validDestinations = [];
+              activeHintMove = null;
+              cachedBoardKey = null;
+              cachedRankedMoves = [];
+              mandatoryToast.classList.remove('show');
+              hintBanner.classList.remove('show');
+
+              currentTurn = getOpponentColor(currentTurn);
+              const status = checkGameOver(board, currentTurn);
+              if (status.isOver) {
+                gameOver = true;
+                showGameOver(status);
+              }
+            }
+          } else {
+            // Regular 1-step move
+            board[selectedNode] = null;
+            board[nodeId] = currentColor;
+            sound.playMove();
+
+            moveHistory.push({ from: selectedNode, to: nodeId, player: currentTurn, isCapture: false });
+            selectedNode = null;
+            validDestinations = [];
+            activeHintMove = null;
+            cachedBoardKey = null;
+            cachedRankedMoves = [];
+            mandatoryToast.classList.remove('show');
+            hintBanner.classList.remove('show');
+
+            currentTurn = getOpponentColor(currentTurn);
+            const status = checkGameOver(board, currentTurn);
+            if (status.isOver) {
+              gameOver = true;
+              showGameOver(status);
+            }
+          }
+          renderBoard();
+        } else {
+          if (!inChainCapture) {
+            selectedNode = null;
+            validDestinations = [];
+            renderBoard();
+          }
+        }
+      }
+
+      // Event delegation for SVG board clicks
+      document.getElementById('board-svg').addEventListener('click', (e) => {
+        const destG = e.target.closest('.dest-target');
+        if (destG) {
+          const nId = parseInt(destG.getAttribute('data-node'), 10);
+          handleNodeClick(nId);
+          return;
+        }
+        const pawnG = e.target.closest('.node-target');
+        if (pawnG) {
+          const nId = parseInt(pawnG.getAttribute('data-node'), 10);
+          handleNodeClick(nId);
+        }
+      });
+
+      // Show Game Over Modal
+      function showGameOver(status) {
+        sound.playVictory();
+        document.getElementById('gameover-title').textContent = status.winner === 'you' ? 'You Win! 🏆' : 'Opponent Wins! 🏆';
+        document.getElementById('gameover-reason').textContent = status.reason || '';
+        document.getElementById('gameover-score-you').textContent = scoreYou;
+        document.getElementById('gameover-score-opp').textContent = scoreOpponent;
+        gameoverModal.classList.add('show');
+      }
+
+      // Request Deep AI Hint
+      async function requestHint() {
+        if (isThinking || gameOver) return;
+
+        const currentKey = getBoardKey(board, currentTurn);
+
+        // Repeated click cycles through candidate moves
+        if (cachedBoardKey === currentKey && cachedRankedMoves.length > 1) {
+          sound.playSelect();
+          currentHintIndex = (currentHintIndex + 1) % cachedRankedMoves.length;
+          const candidate = cachedRankedMoves[currentHintIndex];
+          activeHintMove = candidate.move;
+          displayHintBanner(candidate, currentHintIndex + 1, cachedRankedMoves.length, thinkingDepth);
+          sound.playHint();
+          renderBoard();
+          return;
+        }
+
+        sound.playSelect();
+        isThinking = true;
+        thinkingDepth = 1;
+        activeHintMove = null;
+        hintBanner.classList.remove('show');
+
+        // Show thinking overlay with dynamic target time from Settings
+        const targetSeconds = settings.hintTime;
+        thinkingTargetVal.textContent = targetSeconds;
+        thinkingDepthVal.textContent = '1';
+        thinkingTimeVal.textContent = '0.0';
+        thinkingProgressFill.style.width = '0%';
+        thinkingOverlay.classList.add('show');
+
+        abortController = new AbortController();
+        const startTimestamp = performance.now();
+        const budgetMs = targetSeconds * 1000;
+
+        if (thinkingInterval) clearInterval(thinkingInterval);
+        thinkingInterval = setInterval(() => {
+          const elapsedSec = (performance.now() - startTimestamp) / 1000;
+          thinkingTimeVal.textContent = elapsedSec.toFixed(1);
+          const pct = Math.min(100, Math.round((elapsedSec / targetSeconds) * 100));
+          thinkingProgressFill.style.width = `${pct}%`;
+        }, 100);
+
+        try {
+          const result = await aiEngine.searchRankedMoves(
+            board,
+            currentTurn,
+            budgetMs,
+            moveHistory,
+            (depth) => {
+              thinkingDepth = depth;
+              thinkingDepthVal.textContent = depth;
+            },
+            abortController.signal
+          );
+
+          cachedBoardKey = currentKey;
+          cachedRankedMoves = result.rankedMoves || [];
+          currentHintIndex = 0;
+          activeHintMove = result.bestMove;
+
+          displayHintBanner(cachedRankedMoves[0], 1, cachedRankedMoves.length, result.depthReached);
+          sound.playHint();
+        } catch(err) {
+          // Handled or canceled
+        } finally {
+          if (thinkingInterval) clearInterval(thinkingInterval);
+          thinkingOverlay.classList.remove('show');
+          isThinking = false;
+          renderBoard();
+        }
+      }
+
+      function displayHintBanner(candidate, rank, total, depth) {
+        hintRankPill.textContent = `Move #${rank} of ${total}`;
+        if (candidate.isBlunder) {
+          hintSafePill.textContent = '⚠ Risky';
+          hintSafePill.style.background = 'rgba(153,27,27,0.8)';
+          hintSafePill.style.borderColor = '#ef4444';
+          hintSafePill.style.color = '#fca5a5';
+        } else {
+          hintSafePill.textContent = '✓ Safe';
+          hintSafePill.style.background = 'rgba(6,95,70,0.8)';
+          hintSafePill.style.borderColor = 'rgba(16,185,129,0.5)';
+          hintSafePill.style.color = '#6ee7b7';
+        }
+        hintDescText.textContent = candidate.explanation || (candidate.move.isCapture ? `Capture (${candidate.move.captured.length})` : 'Strategic Move');
+        hintDepthTag.textContent = `Depth ${depth}`;
+        if (total > 1) {
+          hintAltNote.style.display = 'flex';
+          hintBtnLabel.textContent = 'NEXT';
+        } else {
+          hintAltNote.style.display = 'none';
+          hintBtnLabel.textContent = 'HINT';
+        }
+        hintBanner.classList.add('show');
+      }
+
+      // Start match with selected color
+      function startMatch(firstColor) {
+        sound.playMove();
+        board = getInitialBoard();
+        currentTurn = firstColor;
+        scoreYou = 0;
+        scoreOpponent = 0;
+        selectedNode = null;
+        validDestinations = [];
+        inChainCapture = false;
+        activeChainFrom = null;
+        chainOrigin = null;
+        moveHistory = [];
+        gameOver = false;
+        activeHintMove = null;
+        cachedBoardKey = null;
+        cachedRankedMoves = [];
+        currentHintIndex = 0;
+        hintBtnLabel.textContent = 'HINT';
+        mandatoryToast.classList.remove('show');
+        hintBanner.classList.remove('show');
+        firstMoveModal.classList.remove('show');
+        gameoverModal.classList.remove('show');
+
+        homeScreen.classList.remove('active');
+        gameScreen.classList.add('active');
+        renderBoard();
+      }
+
+      // Button listeners
+      document.getElementById('start-game-btn').addEventListener('click', () => {
+        sound.playSelect();
+        firstMoveModal.classList.add('show');
+      });
+
+      document.getElementById('select-blue-btn').addEventListener('click', () => startMatch('blue'));
+      document.getElementById('select-red-btn').addEventListener('click', () => startMatch('red'));
+      document.getElementById('cancel-first-move-btn').addEventListener('click', () => {
+        sound.playSelect();
+        firstMoveModal.classList.remove('show');
+      });
+
+      document.getElementById('back-home-btn').addEventListener('click', () => {
+        sound.playSelect();
+        leaveModal.classList.add('show');
+      });
+      document.getElementById('cancel-leave-btn').addEventListener('click', () => {
+        sound.playSelect();
+        leaveModal.classList.remove('show');
+      });
+      document.getElementById('confirm-leave-btn').addEventListener('click', () => {
+        sound.playSelect();
+        leaveModal.classList.remove('show');
+        gameScreen.classList.remove('active');
+        homeScreen.classList.add('active');
+      });
+
+      document.getElementById('reset-game-btn').addEventListener('click', () => {
+        sound.playSelect();
+        firstMoveModal.classList.add('show');
+      });
+
+      document.getElementById('play-again-btn').addEventListener('click', () => {
+        sound.playSelect();
+        gameoverModal.classList.remove('show');
+        firstMoveModal.classList.add('show');
+      });
+      document.getElementById('gameover-home-btn').addEventListener('click', () => {
+        sound.playSelect();
+        gameoverModal.classList.remove('show');
+        gameScreen.classList.remove('active');
+        homeScreen.classList.add('active');
+      });
+
+      hintBtn.addEventListener('click', requestHint);
+      dismissHintBtn.addEventListener('click', () => {
+        activeHintMove = null;
+        hintBanner.classList.remove('show');
+        renderBoard();
+      });
+
+      cancelThinkingBtn.addEventListener('click', () => {
+        if (abortController) abortController.abort();
+      });
+
+      // Settings Modal logic
+      function openSettings() {
+        sound.playSelect();
+        soundToggleInput.checked = settings.sound;
+        hintTimerSlider.value = settings.hintTime;
+        timerDisplayVal.textContent = settings.hintTime;
+        updateTimerPills(settings.hintTime);
+        settingsModal.classList.add('show');
+      }
+
+      function updateTimerPills(val) {
+        timerPills.forEach((p) => {
+          if (parseInt(p.getAttribute('data-sec'), 10) === val) p.classList.add('active');
+          else p.classList.remove('active');
+        });
+      }
+
+      document.getElementById('home-settings-btn').addEventListener('click', openSettings);
+      document.getElementById('game-settings-btn').addEventListener('click', openSettings);
+
+      soundToggleInput.addEventListener('change', (e) => {
+        settings.sound = e.target.checked;
+        sound.enabled = settings.sound;
+        if (settings.sound) sound.playSelect();
+      });
+
+      hintTimerSlider.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        settings.hintTime = val;
+        timerDisplayVal.textContent = val;
+        updateTimerPills(val);
+      });
+
+      timerPills.forEach((p) => {
+        p.addEventListener('click', () => {
+          const val = parseInt(p.getAttribute('data-sec'), 10);
+          settings.hintTime = val;
+          hintTimerSlider.value = val;
+          timerDisplayVal.textContent = val;
+          updateTimerPills(val);
+          sound.playSelect();
+        });
+      });
+
+      closeSettingsBtn.addEventListener('click', () => {
+        sound.playSelect();
+        try {
+          localStorage.setItem('sholo_guti_settings', JSON.stringify(settings));
+        } catch(e) {}
+        settingsModal.classList.remove('show');
+      });
+
+      // Initialize board background SVG
+      renderBoardBackground();
+    })();
+  </script>
+</body>
+</html>
